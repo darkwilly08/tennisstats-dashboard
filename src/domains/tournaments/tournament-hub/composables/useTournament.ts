@@ -1,48 +1,88 @@
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { TournamentService } from '../services/tournamentService';
 import type { Tournament, BracketMatch, TournamentPressureStats } from '../../_shared/types';
+import { auth } from '@/shared/services/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export function useTournament() {
-    const activeTournament = ref<Tournament | null>(null);
-    const bracketMatches = ref<BracketMatch[]>([]);
-    const pressureStats = ref<TournamentPressureStats | null>(null);
-    const loading = ref(true);
+  const tournaments = ref<Tournament[]>([]);
+  const activeTournament = ref<Tournament | null>(null);
+  const bracketMatches = ref<BracketMatch[]>([]);
+  const pressureStats = ref<TournamentPressureStats | null>(null);
+  const loading = ref(true);
 
-    const fetchData = async () => {
-        loading.value = true;
-        try {
-            const t = await TournamentService.getActiveTournament();
-            activeTournament.value = t;
+  const fetchTournaments = async () => {
+    loading.value = true;
+    try {
+      const list = await TournamentService.getTournaments();
+      tournaments.value = list;
 
-            if (t) {
-                const [m, s] = await Promise.all([
-                    TournamentService.getBracketMatches(t.id),
-                    TournamentService.getPressureStats()
-                ]);
-                bracketMatches.value = m;
-                pressureStats.value = s;
-            }
-        } catch (e) {
-            console.error('Error fetching tournament data:', e);
-        } finally {
-            loading.value = false;
-        }
-    };
+      // Select active tournament: first active, or upcoming, or first in list
+      const current = list.find(t => t.status === 'active') || list.find(t => t.status === 'upcoming') || list[0] || null;
+      activeTournament.value = current;
 
-    onMounted(() => {
-        fetchData();
+      if (current) {
+        const matches = await TournamentService.getBracketMatches(current.id);
+        bracketMatches.value = matches;
+      } else {
+        bracketMatches.value = [];
+      }
+    } catch (e) {
+      console.error('[useTournament] Error fetching tournament data:', e);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const selectTournament = async (t: Tournament) => {
+    activeTournament.value = t;
+    try {
+      bracketMatches.value = await TournamentService.getBracketMatches(t.id);
+    } catch {
+      bracketMatches.value = [];
+    }
+  };
+
+  const createTournament = async (tournamentData: Omit<Tournament, 'id'>) => {
+    const newId = await TournamentService.createTournament(tournamentData);
+    await fetchTournaments();
+    const created = tournaments.value.find(t => t.id === newId);
+    if (created) {
+      activeTournament.value = created;
+    }
+    return newId;
+  };
+
+  let unsubscribeAuth: (() => void) | null = null;
+
+  onMounted(() => {
+    fetchTournaments();
+    unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchTournaments();
+      }
     });
+  });
 
-    const nextMatch = computed(() => {
-        return bracketMatches.value.find(m => m.status === 'live' || m.status === 'upcoming') || null;
-    });
+  onUnmounted(() => {
+    if (unsubscribeAuth) {
+      unsubscribeAuth();
+    }
+  });
 
-    return {
-        activeTournament,
-        bracketMatches,
-        pressureStats,
-        nextMatch,
-        loading,
-        refresh: fetchData
-    };
+  const nextMatch = computed(() => {
+    return bracketMatches.value.find(m => m.status === 'live' || m.status === 'upcoming') || null;
+  });
+
+  return {
+    tournaments,
+    activeTournament,
+    bracketMatches,
+    pressureStats,
+    nextMatch,
+    loading,
+    selectTournament,
+    createTournament,
+    refresh: fetchTournaments
+  };
 }

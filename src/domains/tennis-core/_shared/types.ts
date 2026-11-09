@@ -24,6 +24,13 @@ export interface MatchPayload {
 
     sets: SetPayload[];
     health_metrics?: HealthMetricsPayload;
+
+    // Post-Match Enrichment
+    enriched?: boolean;
+    matchType?: 'tournament' | 'friendly';
+    tournamentId?: string;
+    location?: string;
+    surface?: 'Clay' | 'Hard' | 'Grass';
 }
 
 export interface SetPayload {

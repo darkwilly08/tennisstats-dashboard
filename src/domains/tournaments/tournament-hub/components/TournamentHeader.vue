@@ -14,35 +14,38 @@
             <span class="material-icons-round text-4xl">stadium</span>
           </div>
         </template>
-        <div class="absolute top-2 left-2 px-2 py-1 text-[10px] font-bold tracking-wider text-white bg-amber-500 rounded backdrop-blur-sm shadow-sm">
+        <div v-if="tournament.category" class="absolute top-2 left-2 px-2 py-1 text-[10px] font-bold tracking-wider text-white bg-amber-500 rounded backdrop-blur-sm shadow-sm">
           {{ tournament.category }}
         </div>
       </div>
       
       <div class="flex-1 min-w-0 flex flex-col justify-center">
-        <h2 class="text-3xl font-display font-bold text-slate-800 dark:text-white truncate mb-2">{{ tournament.name }}</h2>
-        
-        <div class="flex flex-wrap gap-4 text-sm text-slate-500 dark:text-slate-400">
-          <div class="flex items-center gap-1.5">
-            <span class="material-icons-round text-sm text-rose-500">location_on</span>
-            <span>{{ tournament.location.venue }}, {{ tournament.location.city }}</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="material-icons-round text-sm text-emerald-500">calendar_today</span>
-            <span>{{ new Date(tournament.dateRange.start).toLocaleDateString() }} - {{ new Date(tournament.dateRange.end).toLocaleDateString() }}</span>
-          </div>
-          <div class="flex items-center gap-1.5 border border-slate-200 dark:border-slate-600 px-2 py-0.5 rounded text-xs font-semibold">
-            {{ tournament.surface }}
-          </div>
+        <div class="flex items-center gap-3 mb-1">
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-slate-800 dark:text-white truncate">{{ tournament.name }}</h2>
+          <span 
+            class="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider"
+            :class="{
+              'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400': tournament.status === 'active',
+              'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400': tournament.status === 'upcoming',
+              'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300': tournament.status === 'completed'
+            }"
+          >
+            {{ tournament.status === 'active' ? 'En Curso' : (tournament.status === 'upcoming' ? 'Próximo' : 'Finalizado') }}
+          </span>
         </div>
         
-        <div class="mt-4 flex gap-3">
-          <button class="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors shadow-sm">
-            Draws & Schedule
-          </button>
-          <button class="px-4 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors bg-white dark:bg-card-dark">
-            Tournament Info
-          </button>
+        <div class="flex flex-wrap gap-4 text-sm text-slate-500 dark:text-slate-400 mt-2">
+          <div class="flex items-center gap-1.5" v-if="locationText">
+            <span class="material-icons-round text-sm text-rose-500">location_on</span>
+            <span>{{ locationText }}</span>
+          </div>
+          <div class="flex items-center gap-1.5" v-if="dateRangeText">
+            <span class="material-icons-round text-sm text-emerald-500">calendar_today</span>
+            <span>{{ dateRangeText }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 border border-slate-200 dark:border-slate-600 px-2 py-0.5 rounded text-xs font-semibold">
+            {{ surfaceLabel }}
+          </div>
         </div>
       </div>
     </div>
@@ -50,9 +53,36 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Tournament } from '../types';
 
-defineProps<{
+const props = defineProps<{
   tournament: Tournament
 }>();
+
+const locationText = computed(() => {
+  if (!props.tournament.location) return '';
+  if (typeof props.tournament.location === 'string') return props.tournament.location;
+  const loc = props.tournament.location as any;
+  return [loc.venue, loc.city].filter(Boolean).join(', ');
+});
+
+const surfaceLabel = computed(() => {
+  const map: Record<string, string> = {
+    Clay: 'Polvo de ladrillo',
+    Hard: 'Rápida / Cemento',
+    Grass: 'Césped'
+  };
+  return map[props.tournament.surface] || props.tournament.surface;
+});
+
+const dateRangeText = computed(() => {
+  if (props.tournament.startDate && props.tournament.endDate) {
+    return `${new Date(props.tournament.startDate).toLocaleDateString()} - ${new Date(props.tournament.endDate).toLocaleDateString()}`;
+  }
+  if (props.tournament.startDate) {
+    return `Inicio: ${new Date(props.tournament.startDate).toLocaleDateString()}`;
+  }
+  return '';
+});
 </script>

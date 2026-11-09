@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -6,7 +6,7 @@ const router = createRouter({
         {
             path: '/',
             name: 'home',
-            component: () => import('./Home.vue')
+            component: () => import('../domains/tennis-core/match-stats/MatchStatsView.vue')
         },
         {
             path: '/analytics',
@@ -14,21 +14,21 @@ const router = createRouter({
             component: () => import('../domains/tennis-core/match-stats/MatchStatsView.vue')
         },
         {
-            path: '/kit-bag',
-            name: 'kit-bag',
-            component: () => import('../domains/equipment/kit-bag/KitBagView.vue')
-        },
-        {
             path: '/tournament',
             name: 'tournament',
             component: () => import('../domains/tournaments/tournament-hub/TournamentHubView.vue')
         },
         {
+            path: '/kit-bag',
+            name: 'kit-bag',
+            component: () => import('../domains/equipment/kit-bag/KitBagView.vue')
+        },
+        {
             path: '/scouting',
             name: 'scouting',
-            component: () => import('../pages/Scouting.vue') // Kept pending per user request
+            component: () => import('../pages/Scouting.vue')
         }
     ]
-})
+});
 
-export default router
+export default router;

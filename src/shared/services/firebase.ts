@@ -3,12 +3,19 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithCredential,
+  signOut as firebaseSignOut,
   onAuthStateChanged,
   type Auth,
   type User,
   type UserCredential
 } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  getFirestore,
+  type Firestore
+} from 'firebase/firestore';
 
 declare global {
   interface Window {
@@ -39,7 +46,20 @@ const firebaseConfig = {
 
 export const app: FirebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(app);
-export const db: Firestore = getFirestore(app);
+
+// Initialize Firestore with offline persistence
+let firestoreDb: Firestore;
+try {
+  firestoreDb = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch {
+  firestoreDb = getFirestore(app);
+}
+
+export const db: Firestore = firestoreDb;
 
 /**
  * Returns a Promise that resolves with the current authenticated User.
@@ -57,6 +77,24 @@ export const getCurrentUser = (): Promise<User | null> => {
     });
   });
 };
+
+/**
+ * Signs out the current user and notifies the native Flutter shell if running inside WebView.
+ */
+export async function signOutUser(): Promise<void> {
+  try {
+    await firebaseSignOut(auth);
+  } catch (err) {
+    console.error('[Firebase Auth] Error during signOut:', err);
+  }
+  if (window.flutter_inappwebview?.callHandler) {
+    try {
+      await window.flutter_inappwebview.callHandler('onSignOut');
+    } catch {
+      // ignore
+    }
+  }
+}
 
 /**
  * Authenticates with Firebase using credentials extracted from a native auth session payload.

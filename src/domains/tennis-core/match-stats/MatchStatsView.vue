@@ -1,39 +1,48 @@
 <template>
   <div class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300 min-h-screen">
-    <header class="sticky top-0 z-50 w-full px-6 py-4 glass-panel border-b border-gray-200 dark:border-slate-700/50">
-      <div class="max-w-7xl mx-auto flex justify-between items-center">
-        <div class="flex items-center gap-4">
-          <div class="p-2 bg-primary-alt rounded-lg text-white shadow-glow">
-            <span class="material-icons-round">sports_tennis</span>
-          </div>
-          <div>
-            <h1 class="font-display text-2xl font-semibold tracking-wide uppercase">Match Analytics</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Player: Alex "Ace" Johnson</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-4">
-          <button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-card-dark shadow-sm border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
-            <span class="material-icons-round text-primary-alt">filter_list</span>
-            <span class="text-sm font-medium">Filters</span>
-          </button>
-          <button class="p-2 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors" @click="toggleDarkMode">
-            <span class="material-icons-round dark:hidden">dark_mode</span>
-            <span class="material-icons-round hidden dark:block">light_mode</span>
-          </button>
-          <div class="h-10 w-10 rounded-full bg-gradient-to-tr from-primary-alt to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
-            AJ
-          </div>
-        </div>
-      </div>
-    </header>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6" v-if="!loading">
 
-    <main class="max-w-7xl mx-auto px-6 py-8 space-y-8" v-if="!loading">
+      <!-- Post-Match Enrichment Notification Banner -->
+      <div 
+        v-if="pendingEnrichmentMatch"
+        class="glass-panel p-4 sm:p-5 rounded-2xl border-l-4 border-l-amber-500 bg-amber-500/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm"
+      >
+        <div class="flex items-center gap-3">
+          <span class="material-icons-round text-amber-500 text-3xl">sports_tennis</span>
+          <div>
+            <h4 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+              🎾 ¡Tenés un partido pendiente de completar! (Rival: {{ pendingEnrichmentMatch.rival || 'opponent' }})
+            </h4>
+            <p class="text-xs text-slate-600 dark:text-slate-300">
+              Registrado recientemente desde tu Wear OS. Asigna el rival real, club y superficie para tus estadísticas.
+            </p>
+          </div>
+        </div>
+        <button 
+          @click="showEnrichmentModal = true"
+          class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all shrink-0 min-h-[44px]"
+        >
+          Completar Detalles
+        </button>
+      </div>
+
+      <!-- Empty State if No Matches -->
+      <div 
+        v-if="matches.length === 0" 
+        class="glass-panel p-8 sm:p-12 rounded-2xl text-center space-y-4 border border-dashed border-slate-300 dark:border-slate-700"
+      >
+        <div class="w-16 h-16 mx-auto rounded-full bg-primary-alt/10 text-primary-alt flex items-center justify-center">
+          <span class="material-icons-round text-3xl">watch</span>
+        </div>
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">No hay partidos registrados aún</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+          Inicia un partido desde tu reloj Wear OS. Tus golpes, frecuencia cardíaca, calorías y puntos se sincronizarán aquí automáticamente.
+        </p>
+      </div>
       
+      <!-- Analytics Dashboard Grid & Visualizations -->
       <OverviewCards :overview="overview" />
       <HealthDataCards :data="physiological" />
-
-      <!-- Bubble Chart / HR Timeline (Hardcoded for now as it needs a specific match context) -->
-      <!-- We can integrate these once we have a mock for a single detailed match view -->
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <OpponentChart :chartData="opponentChartData" />
@@ -44,13 +53,25 @@
       <MatchResultsTable :matches="recentMatches" />
 
     </main>
-    <div v-else class="max-w-7xl mx-auto px-6 py-12 flex justify-center text-slate-500">
-      <span class="material-icons-round animate-spin text-3xl">refresh</span>
+
+    <!-- Loading Spinner -->
+    <div v-else class="max-w-7xl mx-auto px-6 py-16 flex justify-center text-slate-500">
+      <span class="material-icons-round animate-spin text-4xl">refresh</span>
     </div>
+
+    <!-- Post-Match Enrichment Modal -->
+    <MatchEnrichmentModal 
+      v-if="showEnrichmentModal && pendingEnrichmentMatch"
+      :match="pendingEnrichmentMatch"
+      :previousRivals="previousRivals"
+      @close="showEnrichmentModal = false"
+      @enriched="handleMatchEnriched"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useMatchStats } from './composables/useMatchStats';
 import OverviewCards from './components/OverviewCards.vue';
 import HealthDataCards from './components/HealthDataCards.vue';
@@ -58,17 +79,28 @@ import MatchResultsTable from './components/MatchResultsTable.vue';
 import PointBreakdownCards from './components/PointBreakdownCards.vue';
 import OpponentChart from './components/OpponentChart.vue';
 import TrendChart from './components/TrendChart.vue';
+import MatchEnrichmentModal from './components/MatchEnrichmentModal.vue';
+import type { MatchPayload } from '../_shared/types';
 
-const toggleDarkMode = () => {
-  document.documentElement.classList.toggle('dark');
-};
+const showEnrichmentModal = ref(false);
 
 const {
+  matches,
   loading,
   overview,
   recentMatches,
   physiological,
   pointBreakdown,
-  opponentChartData
+  opponentChartData,
+  pendingEnrichmentMatch,
+  previousRivals,
+  updateEnrichedMatch
 } = useMatchStats();
+
+const handleMatchEnriched = (updatedData: Partial<MatchPayload>) => {
+  if (pendingEnrichmentMatch.value?.id) {
+    updateEnrichedMatch(pendingEnrichmentMatch.value.id, updatedData);
+  }
+  showEnrichmentModal.value = false;
+};
 </script>

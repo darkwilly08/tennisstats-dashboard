@@ -38,6 +38,42 @@ export function useMatchStats() {
         }
     });
 
+    // Detect matches needing post-match enrichment
+    const pendingEnrichmentMatch = computed(() => {
+        return matches.value.find(m => {
+            if (m.enriched === true) return false;
+            return m.rival?.toLowerCase() === 'opponent' || m.enriched === false;
+        }) || null;
+    });
+
+    // Extract list of previous rivals for autocomplete suggestions
+    const previousRivals = computed(() => {
+        const set = new Set<string>();
+        for (const m of matches.value) {
+            const r = m.rival?.trim();
+            if (r && r.toLowerCase() !== 'opponent') {
+                set.add(r);
+            }
+        }
+        return Array.from(set);
+    });
+
+    // Update match enrichment immediately in local state
+    const updateEnrichedMatch = (matchId: string, data: Partial<MatchPayload>) => {
+        const idx = matches.value.findIndex(m => m.id === matchId);
+        if (idx !== -1) {
+            const current = matches.value[idx];
+            if (current) {
+                matches.value[idx] = {
+                    ...current,
+                    ...data,
+                    enriched: true
+                } as MatchPayload;
+                matches.value = [...matches.value];
+            }
+        }
+    };
+
     const overview = computed(() => MatchStatsService.computeOverviewStats(matches.value));
     const recentMatches = computed(() => MatchStatsService.mapToMatchRows(matches.value));
     const physiological = computed(() => MatchStatsService.computePhysiologicalData(matches.value));
@@ -47,9 +83,10 @@ export function useMatchStats() {
     const opponentChartData = computed(() => {
         const oppStats: Record<string, { won: number; lost: number }> = {};
         for (const match of matches.value) {
-            if (!oppStats[match.rival]) oppStats[match.rival] = { won: 0, lost: 0 };
-            if (match.win) oppStats[match.rival]!.won++;
-            else oppStats[match.rival]!.lost++;
+            const rivalName = match.rival || 'opponent';
+            if (!oppStats[rivalName]) oppStats[rivalName] = { won: 0, lost: 0 };
+            if (match.win) oppStats[rivalName]!.won++;
+            else oppStats[rivalName]!.lost++;
         }
 
         const labels = Object.keys(oppStats);
@@ -85,6 +122,9 @@ export function useMatchStats() {
         physiological,
         pointBreakdown,
         opponentChartData,
+        pendingEnrichmentMatch,
+        previousRivals,
+        updateEnrichedMatch,
         refresh: fetchMatches
     };
 }
