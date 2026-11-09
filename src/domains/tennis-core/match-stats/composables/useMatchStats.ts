@@ -1,19 +1,19 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { MatchStatsService } from '../services/matchStatsService';
 import type { MatchPayload } from '../../_shared/types';
-import { auth } from '@/shared/services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { getActiveSessionUser, onUserSessionChanged } from '@/shared/services/firebase';
 
 export function useMatchStats() {
     const matches = ref<MatchPayload[]>([]);
     const loading = ref(true);
     let lastFetchedUserId: string | null = null;
 
-    const fetchMatches = async () => {
+    const fetchMatches = async (explicitUserId?: string) => {
         loading.value = true;
         try {
-            lastFetchedUserId = auth.currentUser?.uid ?? null;
-            matches.value = await MatchStatsService.getMatches();
+            const targetUid = explicitUserId || getActiveSessionUser()?.uid || null;
+            lastFetchedUserId = targetUid;
+            matches.value = await MatchStatsService.getMatches(targetUid || undefined);
         } catch (e) {
             console.error('Error fetching matches:', e);
         } finally {
@@ -21,20 +21,20 @@ export function useMatchStats() {
         }
     };
 
-    let unsubscribeAuth: (() => void) | null = null;
+    let unsubscribeSession: (() => void) | null = null;
 
     onMounted(() => {
         fetchMatches();
-        unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-            if (user && user.uid !== lastFetchedUserId) {
-                fetchMatches();
+        unsubscribeSession = onUserSessionChanged((user) => {
+            if (user && user.uid && user.uid !== lastFetchedUserId) {
+                fetchMatches(user.uid);
             }
         });
     });
 
     onUnmounted(() => {
-        if (unsubscribeAuth) {
-            unsubscribeAuth();
+        if (unsubscribeSession) {
+            unsubscribeSession();
         }
     });
 
@@ -79,7 +79,7 @@ export function useMatchStats() {
     const physiological = computed(() => MatchStatsService.computePhysiologicalData(matches.value));
     const pointBreakdown = computed(() => MatchStatsService.computePointBreakdown(matches.value));
 
-    // Data for Opponent Bar Chart
+    // Data for Opponent Bar Chart using M3 Tennis Emerald & Court Slate
     const opponentChartData = computed(() => {
         const oppStats: Record<string, { won: number; lost: number }> = {};
         for (const match of matches.value) {
@@ -94,19 +94,19 @@ export function useMatchStats() {
         const lostData = labels.map(l => oppStats[l]!.lost);
 
         return {
-            labels,
+            labels: labels.length > 0 ? labels : ['Sin partidos'],
             datasets: [
                 {
                     label: 'Won',
-                    data: wonData,
-                    backgroundColor: '#10B981',
+                    data: wonData.length > 0 ? wonData : [0],
+                    backgroundColor: '#006C4C',
                     borderRadius: 4,
                     barPercentage: 0.6,
                 },
                 {
                     label: 'Lost',
-                    data: lostData,
-                    backgroundColor: '#3B82F6',
+                    data: lostData.length > 0 ? lostData : [0],
+                    backgroundColor: '#64748B',
                     borderRadius: 4,
                     barPercentage: 0.6,
                 }

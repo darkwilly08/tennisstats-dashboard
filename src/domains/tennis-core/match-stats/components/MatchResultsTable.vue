@@ -1,50 +1,55 @@
 <template>
-  <div class="glass-panel rounded-2xl overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200 dark:border-slate-700/50 flex justify-between items-center">
-      <h3 class="font-semibold text-lg">Recent Match Results</h3>
-      <button class="text-sm text-primary-alt hover:underline">View All</button>
+  <div class="glass-panel bg-surface text-on-surface rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center">
+      <h3 class="font-semibold text-lg text-on-surface">Recent Match Results</h3>
+      <span class="text-xs font-medium text-on-surface-variant">{{ matches.length }} match(es)</span>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm text-left">
-        <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-gray-50 dark:bg-slate-800/50">
+        <thead class="text-xs text-on-surface-variant uppercase bg-surface-variant/70 border-b border-outline-variant">
           <tr>
-            <th class="px-6 py-3" scope="col">Result</th>
-            <th class="px-6 py-3" scope="col">Score</th>
-            <th class="px-6 py-3" scope="col">Date</th>
-            <th class="px-6 py-3" scope="col">Opponent</th>
-            <th class="px-6 py-3" scope="col">Duration</th>
-            <th class="px-6 py-3 text-center" scope="col">Breaks</th>
-            <th class="px-6 py-3 text-center" scope="col">Points W|L</th>
+            <th class="px-6 py-3 font-semibold" scope="col">Result</th>
+            <th class="px-6 py-3 font-semibold" scope="col">Score</th>
+            <th class="px-6 py-3 font-semibold" scope="col">Date</th>
+            <th class="px-6 py-3 font-semibold" scope="col">Opponent</th>
+            <th class="px-6 py-3 font-semibold" scope="col">Duration</th>
+            <th class="px-6 py-3 font-semibold text-center" scope="col">Breaks</th>
+            <th class="px-6 py-3 font-semibold text-center" scope="col">Points W|L</th>
             <th class="px-6 py-3" scope="col"></th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-slate-700/50">
-          <tr v-for="match in matches" :key="match.id" class="bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+        <tbody class="divide-y divide-outline-variant">
+          <tr v-for="match in matches" :key="match.id" class="bg-surface hover:bg-surface-variant/50 transition-colors">
             <td class="px-6 py-4">
-              <div v-if="match.won" class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-md">
+              <div v-if="match.won" class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-sm">
                 <span class="material-icons-round text-sm">thumb_up</span>
               </div>
-              <div v-else class="w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center text-white shadow-md">
+              <div v-else class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shadow-sm">
                 <span class="material-icons-round text-sm">thumb_down</span>
               </div>
             </td>
-            <td class="px-6 py-4 font-display font-medium">
-              <span class="px-2 py-0.5 rounded text-xs text-white" :class="match.won ? 'bg-emerald-500' : 'bg-rose-500'">{{ match.score }}</span>
+            <td class="px-6 py-4 font-display font-semibold">
+              <span 
+                class="px-2.5 py-1 rounded-md text-xs font-bold" 
+                :class="match.won ? 'bg-primary-container text-on-primary-container' : 'bg-secondary-container text-on-secondary-container'"
+              >
+                {{ match.score }}
+              </span>
             </td>
-            <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ match.date }}</td>
-            <td class="px-6 py-4 font-medium">{{ match.rival }}</td>
-            <td class="px-6 py-4">{{ match.durationString }}</td>
-            <td class="px-6 py-4 text-center">{{ match.meBreaks }}/{{ match.himBreaks }}</td>
-            <td class="px-6 py-4 text-center">{{ match.mePointsWon }}|{{ match.himPointsWon }}</td>
+            <td class="px-6 py-4 text-on-surface-variant">{{ match.date }}</td>
+            <td class="px-6 py-4 font-semibold text-on-surface">{{ match.rival }}</td>
+            <td class="px-6 py-4 text-on-surface">{{ match.durationString }}</td>
+            <td class="px-6 py-4 text-center text-on-surface">{{ match.meBreaks }}/{{ match.himBreaks }}</td>
+            <td class="px-6 py-4 text-center text-on-surface">{{ match.mePointsWon }}|{{ match.himPointsWon }}</td>
             <td class="px-6 py-4 text-right">
-              <button class="text-slate-400 hover:text-primary-alt transition-colors">
+              <button class="text-on-surface-variant hover:text-primary transition-colors p-1">
                 <span class="material-icons-round text-base">visibility</span>
               </button>
             </td>
           </tr>
           <tr v-if="matches.length === 0">
-            <td colspan="8" class="px-6 py-8 text-center text-slate-500">
-              No matches found.
+            <td colspan="8" class="px-6 py-8 text-center text-on-surface-variant">
+              No hay partidos registrados aún. Inicia un partido desde tu reloj Wear OS.
             </td>
           </tr>
         </tbody>

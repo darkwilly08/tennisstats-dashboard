@@ -1,71 +1,54 @@
 <template>
-  <div class="min-h-screen bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300">
-    
-    <!-- Unified Top Bar -->
-    <header class="sticky top-0 z-40 w-full px-4 sm:px-6 py-3 glass-panel border-b border-gray-200 dark:border-slate-700/50">
-      <div class="max-w-7xl mx-auto flex justify-between items-center gap-3">
+  <div 
+    class="min-h-screen bg-background text-on-surface font-sans transition-colors duration-200 flex flex-col"
+    style="padding-bottom: var(--safe-area-bottom, env(safe-area-inset-bottom, 0px));"
+  >
+    <!-- Unified Minimal Top Header with Fullscreen Safe-Area Inset Support -->
+    <header 
+      class="sticky top-0 z-40 w-full bg-surface border-b border-outline-variant shadow-sm transition-colors duration-200"
+      style="padding-top: var(--safe-area-top, env(safe-area-inset-top, 0px));"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex justify-between items-center gap-3">
         
-        <!-- Left: Hamburger & Brand Title -->
-        <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+        <!-- Left: Hamburger Menu Button & Active Page Title -->
+        <div class="flex items-center gap-3 min-w-0">
           <button 
             @click="isDrawerOpen = true"
             aria-label="Menu"
-            class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
+            class="p-2 rounded-xl hover:bg-surface-variant text-on-surface transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
           >
             <span class="material-icons-round text-2xl">menu</span>
           </button>
 
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="p-2 bg-primary-alt rounded-xl text-white shadow-glow hidden xs:flex items-center justify-center shrink-0">
-              <span class="material-icons-round text-xl">sports_tennis</span>
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
+              <span class="material-icons-round text-lg">sports_tennis</span>
             </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-primary-alt hidden sm:inline-block">Tennis Stats</span>
-              </div>
-              <h1 class="font-display text-lg sm:text-2xl font-bold tracking-wide uppercase leading-tight truncate">
-                {{ activePageTitle }}
-              </h1>
-              <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
-                Player: {{ displayName }}
-              </p>
-            </div>
+            <h1 class="font-display text-base sm:text-xl font-bold tracking-wide uppercase text-on-surface truncate">
+              {{ activePageTitle }}
+            </h1>
           </div>
         </div>
 
-        <!-- Right: Actions, Theme Switcher & Profile Avatar -->
-        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <!-- Right: Clean Settings Quick Action -->
+        <div class="flex items-center gap-2 shrink-0">
           <button 
-            class="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-card-dark shadow-sm border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-xs font-semibold min-h-[44px]"
+            @click="showSettingsModal = true"
+            aria-label="Ajustes & Servicios"
+            class="p-2 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
+            title="Ajustes & Servicios"
           >
-            <span class="material-icons-round text-primary-alt text-base">filter_list</span>
-            <span>Filters</span>
+            <span class="material-icons-round text-xl">settings</span>
           </button>
-
-          <button 
-            @click="toggleTheme" 
-            aria-label="Cambiar tema"
-            class="p-2.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
-          >
-            <span class="material-icons-round dark:hidden">dark_mode</span>
-            <span class="material-icons-round hidden dark:block">light_mode</span>
-          </button>
-
-          <div 
-            @click="isDrawerOpen = true"
-            class="h-10 w-10 rounded-full bg-gradient-to-tr from-primary-alt to-purple-500 flex items-center justify-center text-white font-bold shadow-md text-xs sm:text-sm cursor-pointer select-none overflow-hidden shrink-0 border-2 border-white dark:border-slate-800"
-            title="Abrir menú y perfil"
-          >
-            <img v-if="photoURL" :src="photoURL" :alt="displayName" class="w-full h-full object-cover" />
-            <span v-else>{{ initials }}</span>
-          </div>
         </div>
 
       </div>
     </header>
 
     <!-- Main View Slot -->
-    <slot />
+    <div class="flex-1">
+      <slot />
+    </div>
 
     <!-- Slide-Out Drawer Backdrop -->
     <div 
@@ -76,50 +59,60 @@
 
     <!-- Slide-Out Navigation Drawer -->
     <aside 
-      class="fixed top-0 bottom-0 left-0 w-80 max-w-[85vw] bg-white dark:bg-slate-900 z-50 shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800"
+      class="fixed top-0 bottom-0 left-0 w-80 max-w-[85vw] bg-surface text-on-surface z-50 shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out border-r border-outline"
       :class="isDrawerOpen ? 'translate-x-0' : '-translate-x-full'"
+      style="padding-top: var(--safe-area-top, env(safe-area-inset-top, 0px)); padding-bottom: var(--safe-area-bottom, env(safe-area-inset-bottom, 0px));"
     >
-      <!-- Top Drawer Header & User Profile -->
-      <div class="p-6 border-b border-slate-200 dark:border-slate-800 space-y-5">
+      <!-- Top Drawer Header & Real Google User Profile -->
+      <div class="p-6 border-b border-outline-variant space-y-5">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2 text-primary-alt font-display font-bold text-lg">
+          <div class="flex items-center gap-2 text-primary font-display font-bold text-lg">
             <span class="material-icons-round text-2xl">sports_tennis</span>
             <span>Tennis Stats</span>
           </div>
           <button 
             @click="isDrawerOpen = false"
             aria-label="Cerrar menú"
-            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            class="p-2 rounded-xl text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <span class="material-icons-round text-xl">close</span>
           </button>
         </div>
 
         <div class="flex items-center gap-3.5 pt-1">
-          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-primary-alt to-purple-500 flex items-center justify-center text-white font-bold text-base shadow-md overflow-hidden shrink-0">
-            <img v-if="photoURL" :src="photoURL" :alt="displayName" class="w-full h-full object-cover" />
-            <span v-else>{{ initials }}</span>
+          <img 
+            v-if="user?.photoURL" 
+            :src="user.photoURL" 
+            class="w-12 h-12 rounded-full object-cover border border-outline shadow-sm shrink-0" 
+            alt="Profile"
+            referrerpolicy="no-referrer"
+          />
+          <div 
+            v-else 
+            class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container font-bold text-base shadow-sm flex items-center justify-center shrink-0 border border-outline"
+          >
+            {{ initials }}
           </div>
           <div class="min-w-0 flex-1">
-            <div class="font-bold text-slate-900 dark:text-white truncate text-base leading-snug">
+            <div class="font-bold text-on-surface truncate text-base leading-snug">
               {{ displayName }}
             </div>
-            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">
+            <div class="text-xs text-on-surface-variant truncate">
               {{ email }}
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Navigation Links -->
+      <!-- Navigation Links (Material 3 Navigation Drawer Tokens) -->
       <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
         <router-link 
           to="/analytics" 
           @click="isDrawerOpen = false"
           class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px]"
           :class="isRouteActive(['/', '/analytics']) 
-            ? 'bg-primary-alt/10 text-primary-alt font-bold' 
-            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            ? 'bg-primary-container text-on-primary-container font-bold shadow-sm' 
+            : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">insights</span>
           <span>Estadísticas de Partidos</span>
@@ -130,8 +123,8 @@
           @click="isDrawerOpen = false"
           class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px]"
           :class="isRouteActive(['/tournament']) 
-            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' 
-            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            ? 'bg-primary-container text-on-primary-container font-bold shadow-sm' 
+            : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">emoji_events</span>
           <span>Torneos</span>
@@ -142,8 +135,8 @@
           @click="isDrawerOpen = false"
           class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px]"
           :class="isRouteActive(['/kit-bag']) 
-            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold' 
-            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            ? 'bg-primary-container text-on-primary-container font-bold shadow-sm' 
+            : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">work</span>
           <span>Kit Bag / Equipamiento</span>
@@ -154,8 +147,8 @@
           @click="isDrawerOpen = false"
           class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px]"
           :class="isRouteActive(['/scouting']) 
-            ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold' 
-            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            ? 'bg-primary-container text-on-primary-container font-bold shadow-sm' 
+            : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">search</span>
           <span>Rivales & Scouting</span>
@@ -163,28 +156,15 @@
 
         <button 
           @click="handleOpenSettings"
-          class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] text-left"
+          class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface hover:bg-surface-variant transition-all min-h-[48px] text-left"
         >
           <span class="material-icons-round text-xl">settings</span>
           <span>Configuración & Health Connect</span>
         </button>
       </nav>
 
-      <!-- Bottom Drawer Footer: Theme & Logout -->
-      <div class="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-        <button 
-          @click="toggleTheme"
-          class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-xs font-semibold min-h-[44px]"
-        >
-          <div class="flex items-center gap-2">
-            <span class="material-icons-round text-lg">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
-            <span>{{ isDark ? 'Modo Claro' : 'Modo Oscuro' }}</span>
-          </div>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700">
-            {{ isDark ? 'Oscuro' : 'Claro' }}
-          </span>
-        </button>
-
+      <!-- Bottom Drawer Footer: Logout Only (Theme Switcher Consolidated in Settings) -->
+      <div class="p-4 border-t border-outline-variant">
         <button 
           @click="handleSignOut"
           class="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-xs sm:text-sm font-semibold min-h-[44px]"
@@ -195,43 +175,86 @@
       </div>
     </aside>
 
-    <!-- Settings & Health Connect Modal -->
+    <!-- Settings Modal (Ajustes & Servicios - Exclusive Home for Theme Switcher) -->
     <div v-if="showSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm" @click="showSettingsModal = false" />
       
-      <div class="relative bg-white dark:bg-card-dark rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md p-6 space-y-5 z-10">
-        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
+      <div class="relative bg-surface text-on-surface rounded-2xl shadow-2xl border border-outline w-full max-w-md p-6 space-y-5 z-10">
+        <div class="flex items-center justify-between border-b border-outline-variant pb-3">
           <div class="flex items-center gap-2">
-            <span class="material-icons-round text-primary-alt text-2xl">settings</span>
-            <h3 class="text-lg font-bold">Configuración & Sensores</h3>
+            <span class="material-icons-round text-primary text-2xl">settings</span>
+            <h3 class="text-lg font-bold text-on-surface">Ajustes & Servicios</h3>
           </div>
-          <button @click="showSettingsModal = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white">
+          <button 
+            @click="showSettingsModal = false" 
+            aria-label="Cerrar ajustes"
+            class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          >
             <span class="material-icons-round">close</span>
           </button>
         </div>
 
         <div class="space-y-4">
-          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-            <div class="flex items-center gap-2 font-bold text-sm text-slate-900 dark:text-white">
-              <span class="material-icons-round text-emerald-500">favorite</span>
+          <!-- Theme Configuration (Consolidated in Settings Only) -->
+          <div class="p-4 rounded-xl bg-surface-variant/60 border border-outline-variant space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 font-bold text-sm text-on-surface">
+                <span class="material-icons-round text-primary text-lg">{{ isDark ? 'dark_mode' : 'light_mode' }}</span>
+                <span>Apariencia del Tema</span>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary-container text-on-primary-container">
+                {{ isDark ? 'Oscuro' : 'Claro' }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                @click="setThemeMode('light')"
+                class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border transition-all min-h-[44px]"
+                :class="!isDark 
+                  ? 'bg-primary text-on-primary border-primary shadow-sm' 
+                  : 'bg-surface text-on-surface border-outline hover:bg-surface-variant'"
+              >
+                <span class="material-icons-round text-base">light_mode</span>
+                <span>Modo Claro</span>
+              </button>
+              <button
+                type="button"
+                @click="setThemeMode('dark')"
+                class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border transition-all min-h-[44px]"
+                :class="isDark 
+                  ? 'bg-primary text-on-primary border-primary shadow-sm' 
+                  : 'bg-surface text-on-surface border-outline hover:bg-surface-variant'"
+              >
+                <span class="material-icons-round text-base">dark_mode</span>
+                <span>Modo Oscuro</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Health Connect & Wear OS -->
+          <div class="p-4 rounded-xl bg-surface-variant/60 border border-outline-variant space-y-2">
+            <div class="flex items-center gap-2 font-bold text-sm text-on-surface">
+              <span class="material-icons-round text-primary">favorite</span>
               <span>Health Connect & Wear OS</span>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Sincronización activa de frecuencia cardíaca, consumo calórico y pasos durante cada partido de tenis registrado con tu reloj inteligente.
+            <p class="text-xs text-on-surface-variant leading-relaxed">
+              Sincronización activa de frecuencia cardíaca, consumo calórico y pasos durante cada partido registrado con tu reloj inteligente.
             </p>
           </div>
 
-          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex justify-between items-center text-xs">
-            <span class="text-slate-500">Versión del Dashboard</span>
-            <span class="font-bold text-slate-800 dark:text-white">v1.2.0 (Production)</span>
+          <div class="p-4 rounded-xl bg-surface-variant/60 border border-outline-variant flex justify-between items-center text-xs">
+            <span class="text-on-surface-variant">Versión del Dashboard</span>
+            <span class="font-bold text-on-surface">v1.3.0 (M3 Design System)</span>
           </div>
 
           <button 
             @click="triggerNativeSettings"
-            class="w-full py-2.5 px-4 rounded-xl bg-primary-alt hover:bg-primary text-white font-semibold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 min-h-[44px]"
+            class="w-full bg-primary text-on-primary hover:opacity-90 transition-all font-medium px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 min-h-[44px]"
           >
             <span class="material-icons-round text-base">tune</span>
-            <span>Abrir Ajustes de la Aplicación</span>
+            <span>Abrir Ajustes Nativos</span>
           </button>
         </div>
       </div>
@@ -244,10 +267,10 @@
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuth } from '@/shared/composables/useAuth';
-import { toggleTheme, isDark } from '@/shared/services/theme';
+import { applyTheme, toggleTheme, isDark, type ThemeMode } from '@/shared/services/theme';
 
 const route = useRoute();
-const { displayName, email, photoURL, initials, logout } = useAuth();
+const { user, displayName, email, initials, logout } = useAuth();
 
 const isDrawerOpen = ref(false);
 const showSettingsModal = ref(false);
@@ -273,16 +296,16 @@ const isRouteActive = (paths: string[]) => {
   return paths.includes(route.path);
 };
 
-const handleOpenSettings = async () => {
-  isDrawerOpen.value = false;
-  if (window.flutter_inappwebview?.callHandler) {
-    try {
-      await window.flutter_inappwebview.callHandler('openNativeSettings');
-      return;
-    } catch (e) {
-      console.warn('Native openNativeSettings failed, falling back to modal:', e);
-    }
+const setThemeMode = (mode: ThemeMode) => {
+  if ((mode === 'dark') !== isDark.value) {
+    toggleTheme();
+  } else {
+    applyTheme(mode);
   }
+};
+
+const handleOpenSettings = () => {
+  isDrawerOpen.value = false;
   showSettingsModal.value = true;
 };
 

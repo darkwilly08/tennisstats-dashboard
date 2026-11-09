@@ -8,31 +8,39 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Union of all primary colors
-        "primary": "#0db9f2",        // Used in Kit Bag, Tourney Hub, Scouting
-        "primary-alt": "#3B82F6",    // Used in Analytics as "primary"
-        "primary-dark": "#0a92bf",
-        "primary-light": "#3ec7f5",
-        
-        // Other Analytics colors
-        "secondary": "#10B981",      // Vibrant Green
-        "accent": "#F97316",         // Orange for highlight
+        // Material 3 Design Tokens
+        "primary": "var(--md-sys-color-primary)",
+        "on-primary": "var(--md-sys-color-on-primary)",
+        "primary-container": "var(--md-sys-color-primary-container)",
+        "on-primary-container": "var(--md-sys-color-on-primary-container)",
+        "secondary": "var(--md-sys-color-secondary)",
+        "on-secondary": "var(--md-sys-color-on-secondary)",
+        "secondary-container": "var(--md-sys-color-secondary-container)",
+        "on-secondary-container": "var(--md-sys-color-on-secondary-container)",
+        "background": "var(--md-sys-color-background)",
+        "on-background": "var(--md-sys-color-on-background)",
+        "surface": "var(--md-sys-color-surface)",
+        "surface-variant": "var(--md-sys-color-surface-variant)",
+        "on-surface": "var(--md-sys-color-on-surface)",
+        "on-surface-variant": "var(--md-sys-color-on-surface-variant)",
+        "outline": "var(--md-sys-color-outline)",
+        "outline-variant": "var(--md-sys-color-outline-variant)",
 
-        // Backgrounds
-        "background-light": "#f5f8f8", // From kit bag
-        "background-dark": "#101e22",  // From kit bag
-        "background-dark-alt": "#0F172A", // From analytics
-
-        // Surfaces
+        // Semantic compatibility mappings
+        "primary-alt": "var(--md-sys-color-primary)",
+        "primary-dark": "#005138",
+        "primary-light": "#8FF7C7",
+        "accent": "#F59E0B",
+        "background-light": "#F8FAFC",
+        "background-dark": "#0B0F19",
+        "background-dark-alt": "#0B0F19",
         "surface-light": "#FFFFFF",
-        "surface-dark": "#1b282c",     // From kit bag
-        "surface-dark-alt": "#1E293B", // From analytics
-        "surface-darker": "#152024",   // From kit bag
-        "card-dark": "#334155",        // From analytics
-        
-        // Text specific
-        "text-primary-dark": "#e2e8f0",
-        "text-secondary-dark": "#94a3b8",
+        "surface-dark": "#111827",
+        "surface-dark-alt": "#1E293B",
+        "surface-darker": "#0B0F19",
+        "card-dark": "#111827",
+        "text-primary-dark": "#F8FAFC",
+        "text-secondary-dark": "#94A3B8",
       },
       fontFamily: {
         "display": ["Inter", "sans-serif"],
@@ -43,14 +51,14 @@ export default {
         "DEFAULT": "0.25rem",
         "lg": "0.5rem",
         "xl": "0.75rem",
-        "2xl": "1.5rem",
+        "2xl": "1rem",
         "full": "9999px",
       },
       boxShadow: {
-        'glow': '0 0 15px rgba(59, 130, 246, 0.5)',
-        'glow-green': '0 0 15px rgba(16, 185, 129, 0.4)',
-        'glow-red': '0 0 15px rgba(244, 63, 94, 0.4)',
-        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+        'glow': '0 0 15px rgba(0, 108, 76, 0.25)',
+        'glow-green': '0 0 15px rgba(16, 185, 129, 0.3)',
+        'glow-red': '0 0 15px rgba(244, 63, 94, 0.3)',
+        'glass': '0 4px 20px 0 rgba(15, 23, 42, 0.08)',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

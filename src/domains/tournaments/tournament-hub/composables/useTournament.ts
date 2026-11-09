@@ -1,8 +1,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { TournamentService } from '../services/tournamentService';
 import type { Tournament, BracketMatch, TournamentPressureStats } from '../../_shared/types';
-import { auth } from '@/shared/services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { getActiveSessionUser, onUserSessionChanged } from '@/shared/services/firebase';
 
 export function useTournament() {
   const tournaments = ref<Tournament[]>([]);
@@ -10,14 +9,16 @@ export function useTournament() {
   const bracketMatches = ref<BracketMatch[]>([]);
   const pressureStats = ref<TournamentPressureStats | null>(null);
   const loading = ref(true);
+  let lastFetchedUid: string | null = null;
 
-  const fetchTournaments = async () => {
+  const fetchTournaments = async (explicitUid?: string) => {
     loading.value = true;
     try {
-      const list = await TournamentService.getTournaments();
+      const targetUid = explicitUid || getActiveSessionUser()?.uid || null;
+      lastFetchedUid = targetUid;
+      const list = await TournamentService.getTournaments(targetUid || undefined);
       tournaments.value = list;
 
-      // Select active tournament: first active, or upcoming, or first in list
       const current = list.find(t => t.status === 'active') || list.find(t => t.status === 'upcoming') || list[0] || null;
       activeTournament.value = current;
 
@@ -53,20 +54,20 @@ export function useTournament() {
     return newId;
   };
 
-  let unsubscribeAuth: (() => void) | null = null;
+  let unsubscribeSession: (() => void) | null = null;
 
   onMounted(() => {
     fetchTournaments();
-    unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        fetchTournaments();
+    unsubscribeSession = onUserSessionChanged((user) => {
+      if (user && user.uid && user.uid !== lastFetchedUid) {
+        fetchTournaments(user.uid);
       }
     });
   });
 
   onUnmounted(() => {
-    if (unsubscribeAuth) {
-      unsubscribeAuth();
+    if (unsubscribeSession) {
+      unsubscribeSession();
     }
   });
 

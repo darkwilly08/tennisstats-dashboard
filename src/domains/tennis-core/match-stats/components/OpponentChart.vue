@@ -1,10 +1,10 @@
 <template>
-  <div class="glass-panel p-6 rounded-2xl">
+  <div class="glass-panel bg-surface text-on-surface p-6 rounded-2xl">
     <div class="flex justify-between items-center mb-6">
-      <h3 class="font-semibold text-lg">Results by Opponent</h3>
+      <h3 class="font-semibold text-lg text-on-surface">Results by Opponent</h3>
       <div class="flex gap-4 text-xs font-bold">
-        <div class="flex items-center gap-1 text-emerald-500"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> WON</div>
-        <div class="flex items-center gap-1 text-primary-alt"><span class="w-2 h-2 rounded-full bg-primary-alt"></span> LOST</div>
+        <div class="flex items-center gap-1.5 text-primary"><span class="w-2.5 h-2.5 rounded-full bg-primary"></span> WON</div>
+        <div class="flex items-center gap-1.5 text-on-surface-variant"><span class="w-2.5 h-2.5 rounded-full bg-secondary"></span> LOST</div>
       </div>
     </div>
     <div class="chart-container">
@@ -27,10 +27,10 @@ import {
 import { Bar } from 'vue-chartjs';
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
-ChartJS.defaults.color = '#94a3b8';
-ChartJS.defaults.borderColor = '#334155';
+ChartJS.defaults.color = '#64748B';
+ChartJS.defaults.borderColor = 'rgba(148, 163, 184, 0.25)';
 
-const props = defineProps<{
+defineProps<{
   chartData: any
 }>();
 
@@ -48,7 +48,7 @@ const chartOptions = ref({
     y: {
       stacked: true,
       beginAtZero: true,
-      grid: { color: 'rgba(51, 65, 85, 0.5)' },
+      grid: { color: 'rgba(148, 163, 184, 0.2)' },
       ticks: {
         stepSize: 1
       }

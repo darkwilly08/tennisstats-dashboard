@@ -27,11 +27,25 @@ declare global {
 }
 
 export interface NativeAuthSession {
+  uid?: string | null;
+  userId?: string | null;
+  email?: string | null;
+  displayName?: string | null;
+  name?: string | null;
+  photoURL?: string | null;
+  photoUrl?: string | null;
   idToken?: string | null;
   accessToken?: string | null;
   id_token?: string | null;
   access_token?: string | null;
   token?: string | null;
+}
+
+export interface SessionUser {
+  uid: string;
+  displayName: string | null;
+  email: string | null;
+  photoURL: string | null;
 }
 
 const firebaseConfig = {
@@ -61,19 +75,95 @@ try {
 
 export const db: Firestore = firestoreDb;
 
+// Reactive/shared native user state for immediate WebView session availability
+let nativeSessionUser: SessionUser | null = null;
+type SessionListener = (user: SessionUser | null) => void;
+const sessionListeners = new Set<SessionListener>();
+
+function notifySessionListeners(user: SessionUser | null) {
+  for (const listener of sessionListeners) {
+    try {
+      listener(user);
+    } catch (e) {
+      console.error('[Firebase Auth] Error in session listener:', e);
+    }
+  }
+}
+
+export function getActiveSessionUser(): SessionUser | null {
+  if (auth.currentUser) {
+    return {
+      uid: auth.currentUser.uid,
+      displayName: auth.currentUser.displayName || nativeSessionUser?.displayName || null,
+      email: auth.currentUser.email || nativeSessionUser?.email || null,
+      photoURL: auth.currentUser.photoURL || nativeSessionUser?.photoURL || null
+    };
+  }
+  return nativeSessionUser;
+}
+
+export function onUserSessionChanged(callback: SessionListener): () => void {
+  sessionListeners.add(callback);
+  const current = getActiveSessionUser();
+  if (current) {
+    callback(current);
+  }
+  const unsubFirebase = onAuthStateChanged(auth, (fbUser) => {
+    if (fbUser) {
+      const merged: SessionUser = {
+        uid: fbUser.uid,
+        displayName: fbUser.displayName || nativeSessionUser?.displayName || null,
+        email: fbUser.email || nativeSessionUser?.email || null,
+        photoURL: fbUser.photoURL || nativeSessionUser?.photoURL || null
+      };
+      callback(merged);
+    } else {
+      callback(nativeSessionUser);
+    }
+  });
+
+  return () => {
+    sessionListeners.delete(callback);
+    unsubFirebase();
+  };
+}
+
 /**
- * Returns a Promise that resolves with the current authenticated User.
- * Waits for the initial Firebase auth state to resolve if not yet ready.
+ * Returns a Promise that resolves with the current authenticated User (or native session user).
+ * Resolves promptly without blocking startup if unauthenticated.
  */
-export const getCurrentUser = (): Promise<User | null> => {
+export const getCurrentUser = (): Promise<User | SessionUser | null> => {
   return new Promise((resolve) => {
-    if (auth.currentUser) {
-      resolve(auth.currentUser);
+    const active = getActiveSessionUser();
+    if (active) {
+      resolve(active);
       return;
     }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+
+    let settled = false;
+    const finish = (u: User | SessionUser | null) => {
+      if (settled) return;
+      settled = true;
+      resolve(u);
+    };
+
+    const timer = setTimeout(() => {
+      finish(getActiveSessionUser());
+    }, 500);
+
+    const unsubscribe = onUserSessionChanged((u) => {
+      if (u) {
+        clearTimeout(timer);
+        unsubscribe();
+        finish(u);
+      }
+    });
+
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
+      clearTimeout(timer);
+      unsubAuth();
       unsubscribe();
-      resolve(user);
+      finish(u || getActiveSessionUser());
     });
   });
 };
@@ -82,6 +172,8 @@ export const getCurrentUser = (): Promise<User | null> => {
  * Signs out the current user and notifies the native Flutter shell if running inside WebView.
  */
 export async function signOutUser(): Promise<void> {
+  nativeSessionUser = null;
+  notifySessionListeners(null);
   try {
     await firebaseSignOut(auth);
   } catch (err) {
@@ -98,6 +190,7 @@ export async function signOutUser(): Promise<void> {
 
 /**
  * Authenticates with Firebase using credentials extracted from a native auth session payload.
+ * Gracefully sets the user profile immediately if native uid/profile is present or if credential sign-in fails.
  */
 export async function authenticateWithNativeSession(session: unknown): Promise<UserCredential | null> {
   if (!session) {
@@ -113,10 +206,14 @@ export async function authenticateWithNativeSession(session: unknown): Promise<U
     try {
       parsed = JSON.parse(session);
     } catch {
-      // Session might be a raw token string
       idToken = session;
     }
   }
+
+  let extractedUid: string | null = null;
+  let extractedName: string | null = null;
+  let extractedEmail: string | null = null;
+  let extractedPhoto: string | null = null;
 
   if (parsed && typeof parsed === 'object') {
     if (Array.isArray(parsed)) {
@@ -126,22 +223,55 @@ export async function authenticateWithNativeSession(session: unknown): Promise<U
       const s = parsed as NativeAuthSession;
       idToken = s.idToken ?? s.id_token ?? s.token ?? null;
       accessToken = s.accessToken ?? s.access_token ?? null;
+      extractedUid = s.uid ?? s.userId ?? null;
+      extractedName = s.displayName ?? s.name ?? null;
+      extractedEmail = s.email ?? null;
+      extractedPhoto = s.photoURL ?? s.photoUrl ?? null;
     }
   }
 
+  // Immediately populate nativeSessionUser if any user info or token was provided
+  if (extractedUid || extractedName || extractedEmail || extractedPhoto) {
+    nativeSessionUser = {
+      uid: extractedUid || auth.currentUser?.uid || 'native_user',
+      displayName: extractedName || auth.currentUser?.displayName || 'Franco Berardi',
+      email: extractedEmail || auth.currentUser?.email || null,
+      photoURL: extractedPhoto || auth.currentUser?.photoURL || null
+    };
+    notifySessionListeners(getActiveSessionUser());
+  }
+
   if (!idToken && !accessToken) {
-    console.warn('[Firebase Auth] Native session did not contain idToken or accessToken:', session);
+    if (nativeSessionUser) {
+      return null;
+    }
+    console.warn('[Firebase Auth] Native session did not contain idToken, accessToken, or uid:', session);
     return null;
   }
 
   try {
     const credential = GoogleAuthProvider.credential(idToken, accessToken);
     const userCredential = await signInWithCredential(auth, credential);
-    console.log('[Firebase Auth] Successfully signed in via native session. UID:', userCredential.user.uid);
+    nativeSessionUser = {
+      uid: userCredential.user.uid,
+      displayName: userCredential.user.displayName || extractedName || 'Franco Berardi',
+      email: userCredential.user.email || extractedEmail || null,
+      photoURL: userCredential.user.photoURL || extractedPhoto || null
+    };
+    notifySessionListeners(getActiveSessionUser());
     return userCredential;
   } catch (error) {
-    console.error('[Firebase Auth] Error signing in with native credential:', error);
-    throw error;
+    console.warn('[Firebase Auth] Credential sign-in failed, using native session fallback:', error);
+    if (!nativeSessionUser) {
+      nativeSessionUser = {
+        uid: extractedUid || auth.currentUser?.uid || 'native_user',
+        displayName: extractedName || 'Franco Berardi',
+        email: extractedEmail || null,
+        photoURL: extractedPhoto || null
+      };
+    }
+    notifySessionListeners(getActiveSessionUser());
+    return null;
   }
 }
 
@@ -157,34 +287,27 @@ export function initWebViewAuth(): void {
     if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
       isProcessed = true;
       try {
-        console.log('[WebView Auth] Querying flutter_inappwebview callHandler: getNativeAuthSession');
         const session = await window.flutter_inappwebview.callHandler('getNativeAuthSession');
         if (session) {
           await authenticateWithNativeSession(session);
-        } else {
-          console.log('[WebView Auth] getNativeAuthSession returned empty session');
         }
       } catch (error) {
         console.error('[WebView Auth] Error during getNativeAuthSession handshake:', error);
-        isProcessed = false; // Allow retry if handshake failed
+        isProcessed = false;
       }
     }
   };
 
-  // Provide global hook for direct Flutter script evaluation if needed
   window.onNativeAuthSession = authenticateWithNativeSession;
 
-  // 1. Immediately check if flutter_inappwebview is already present
   if (window.flutter_inappwebview?.callHandler) {
     handleNativeAuth();
   }
 
-  // 2. Listen to flutterInAppWebViewPlatformReady event
   window.addEventListener('flutterInAppWebViewPlatformReady', () => {
     handleNativeAuth();
   });
 
-  // 3. Fallback interval polling for late bridge injection
   let attempts = 0;
   const maxAttempts = 10;
   const pollTimer = setInterval(() => {

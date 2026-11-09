@@ -2,20 +2,21 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm" @click="$emit('close')" />
 
-    <div class="relative bg-white dark:bg-card-dark rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg p-6 space-y-5 z-10 max-h-[90vh] overflow-y-auto">
+    <div class="relative bg-surface text-on-surface rounded-2xl shadow-2xl border border-outline w-full max-w-lg p-6 space-y-5 z-10 max-h-[90vh] overflow-y-auto">
       
       <!-- Modal Header -->
-      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/60 pb-3">
+      <div class="flex items-center justify-between border-b border-outline-variant pb-3">
         <div class="flex items-center gap-2.5">
-          <span class="material-icons-round text-primary-alt text-2xl">edit_note</span>
+          <span class="material-icons-round text-primary text-2xl">edit_note</span>
           <div>
-            <h3 class="text-lg font-bold">Completar Detalles del Partido</h3>
-            <p class="text-xs text-slate-500">Registrado desde tu reloj Wear OS</p>
+            <h3 class="text-lg font-bold text-on-surface">Completar Detalles del Partido</h3>
+            <p class="text-xs text-on-surface-variant">Registrado desde tu reloj Wear OS</p>
           </div>
         </div>
         <button 
           @click="$emit('close')"
-          class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          aria-label="Cerrar"
+          class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <span class="material-icons-round">close</span>
         </button>
@@ -25,7 +26,7 @@
         
         <!-- Clasificación: Torneo Oficial vs Partido Amistoso -->
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
             Clasificación del Partido *
           </label>
           <div class="grid grid-cols-2 gap-3">
@@ -34,8 +35,8 @@
               @click="form.matchType = 'friendly'"
               class="flex items-center justify-center gap-2 p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all min-h-[44px]"
               :class="form.matchType === 'friendly' 
-                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold' 
-                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
+                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
               <span class="material-icons-round text-base">handshake</span>
               <span>Partido Amistoso</span>
@@ -45,8 +46,8 @@
               @click="form.matchType = 'tournament'"
               class="flex items-center justify-center gap-2 p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all min-h-[44px]"
               :class="form.matchType === 'tournament' 
-                ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' 
-                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
+                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
               <span class="material-icons-round text-base">emoji_events</span>
               <span>Torneo Oficial</span>
@@ -55,32 +56,33 @@
         </div>
 
         <!-- Torneo (Visible if Torneo Oficial is selected) -->
-        <div v-if="form.matchType === 'tournament'" class="space-y-2 p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20">
+        <div v-if="form.matchType === 'tournament'" class="space-y-2 p-4 rounded-xl bg-surface-variant/60 border border-outline-variant">
           <div class="flex items-center justify-between">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface">
               Torneo Asociado *
             </label>
             <button 
               type="button"
               @click="showInlineCreateTournament = !showInlineCreateTournament"
-              class="text-xs text-primary-alt hover:underline font-medium"
+              class="text-xs text-primary hover:underline font-semibold flex items-center gap-1"
             >
-              {{ showInlineCreateTournament ? 'Volver al listado' : '+ Nuevo Torneo' }}
+              <span class="material-icons-round text-sm" v-if="!showInlineCreateTournament">add</span>
+              <span>{{ showInlineCreateTournament ? 'Volver al listado' : 'Nuevo Torneo' }}</span>
             </button>
           </div>
 
           <div v-if="!showInlineCreateTournament">
             <select
               v-model="form.tournamentId"
-              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-outline bg-surface text-on-surface text-sm focus:ring-2 focus:ring-primary outline-none"
             >
               <option value="">Selecciona un torneo...</option>
               <option v-for="t in userTournaments" :key="t.id" :value="t.id">
                 {{ t.name }} ({{ t.location }})
               </option>
             </select>
-            <p v-if="userTournaments.length === 0" class="text-xs text-amber-600 dark:text-amber-400 mt-1">
-              No tienes torneos registrados. Haz clic en "+ Nuevo Torneo" arriba para crear uno.
+            <p v-if="userTournaments.length === 0" class="text-xs text-on-surface-variant mt-1.5">
+              No tienes torneos registrados. Haz clic en "Nuevo Torneo" arriba para crear uno.
             </p>
           </div>
 
@@ -89,19 +91,19 @@
               v-model="inlineTournamentName"
               type="text" 
               placeholder="Nombre del nuevo torneo..."
-              class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs sm:text-sm focus:ring-1 focus:ring-amber-500"
+              class="w-full px-3 py-2 rounded-lg border border-outline bg-surface text-on-surface text-xs sm:text-sm focus:ring-2 focus:ring-primary outline-none"
             />
             <input 
               v-model="inlineTournamentLocation"
               type="text" 
               placeholder="Club / Lugar del torneo..."
-              class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs sm:text-sm focus:ring-1 focus:ring-amber-500"
+              class="w-full px-3 py-2 rounded-lg border border-outline bg-surface text-on-surface text-xs sm:text-sm focus:ring-2 focus:ring-primary outline-none"
             />
             <button 
               type="button"
               @click="handleCreateInlineTournament"
               :disabled="!inlineTournamentName || !inlineTournamentLocation"
-              class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold disabled:opacity-50 transition-colors"
+              class="w-full bg-primary text-on-primary hover:opacity-90 transition-all font-medium px-4 py-2 rounded-xl shadow-sm flex items-center justify-center text-xs disabled:opacity-50 min-h-[40px]"
             >
               Guardar Torneo y Asociar
             </button>
@@ -110,7 +112,7 @@
 
         <!-- Rival Input with Autocomplete Suggestions -->
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">
             Nombre del Rival *
           </label>
           <input 
@@ -118,18 +120,18 @@
             type="text" 
             required
             placeholder="Ej: Carlos Alcaraz, Marian, J. Rodriguez"
-            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-alt outline-none"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-outline bg-surface-variant/50 text-on-surface text-sm focus:ring-2 focus:ring-primary outline-none"
           />
 
           <!-- Autocomplete Suggestions -->
           <div v-if="rivalSuggestions.length > 0" class="flex flex-wrap items-center gap-1.5 mt-2">
-            <span class="text-[11px] text-slate-400">Sugerencias:</span>
+            <span class="text-[11px] text-on-surface-variant">Sugerencias:</span>
             <button
               v-for="sug in rivalSuggestions"
               :key="sug"
               type="button"
               @click="form.rival = sug"
-              class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-primary-alt/20 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700 transition-colors"
+              class="px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-container hover:opacity-90 text-xs font-semibold border border-outline transition-all"
             >
               {{ sug }}
             </button>
@@ -139,14 +141,14 @@
         <!-- Lugar / Club with Geolocation -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
               Lugar / Club
             </label>
             <button 
               type="button"
               @click="requestLocation"
               :disabled="locating"
-              class="text-xs text-primary-alt hover:underline flex items-center gap-1 font-medium"
+              class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
             >
               <span class="material-icons-round text-xs" :class="{ 'animate-spin': locating }">my_location</span>
               <span>📍 Usar ubicación actual</span>
@@ -156,43 +158,43 @@
             v-model="form.location"
             type="text" 
             placeholder="Ej: Buenos Aires Lawn Tennis Club"
-            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-alt outline-none"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-outline bg-surface-variant/50 text-on-surface text-sm focus:ring-2 focus:ring-primary outline-none"
           />
         </div>
 
         <!-- Superficie -->
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">
             Superficie
           </label>
           <div class="grid grid-cols-3 gap-2">
             <button
               type="button"
               @click="form.surface = 'Clay'"
-              class="px-3 py-2 rounded-lg text-xs font-semibold border transition-all text-center min-h-[44px]"
+              class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center min-h-[44px]"
               :class="form.surface === 'Clay' 
-                ? 'border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold' 
-                : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
+                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
               Polvo de ladrillo
             </button>
             <button
               type="button"
               @click="form.surface = 'Hard'"
-              class="px-3 py-2 rounded-lg text-xs font-semibold border transition-all text-center min-h-[44px]"
+              class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center min-h-[44px]"
               :class="form.surface === 'Hard' 
-                ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold' 
-                : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
+                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
               Cemento / Rápida
             </button>
             <button
               type="button"
               @click="form.surface = 'Grass'"
-              class="px-3 py-2 rounded-lg text-xs font-semibold border transition-all text-center min-h-[44px]"
+              class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center min-h-[44px]"
               :class="form.surface === 'Grass' 
-                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold' 
-                : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
+                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
               Césped
             </button>
@@ -200,18 +202,18 @@
         </div>
 
         <!-- Submit & Cancel Buttons -->
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700/60">
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant">
           <button 
             type="button"
             @click="$emit('close')"
-            class="px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px]"
+            class="bg-surface border border-outline text-on-surface hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-medium px-5 py-2.5 rounded-xl text-sm min-h-[44px]"
           >
             Cancelar
           </button>
           <button 
             type="submit"
             :disabled="saving || !form.rival.trim()"
-            class="px-5 py-2.5 rounded-lg text-sm font-semibold bg-primary-alt hover:bg-primary text-white shadow-md disabled:opacity-50 transition-all flex items-center gap-2 min-h-[44px]"
+            class="bg-primary text-on-primary hover:opacity-90 transition-all font-medium px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm disabled:opacity-50 min-h-[44px]"
           >
             <span v-if="saving" class="material-icons-round animate-spin text-sm">refresh</span>
             <span>Guardar Detalles</span>
@@ -228,7 +230,7 @@ import { ref, computed, onMounted } from 'vue';
 import type { MatchPayload } from '../../_shared/types';
 import { MatchStatsService } from '../services/matchStatsService';
 import { TournamentService, type Tournament } from '@/domains/tournaments/tournament-hub';
-import { auth } from '@/shared/services/firebase';
+import { getActiveSessionUser } from '@/shared/services/firebase';
 
 const props = defineProps<{
   match: MatchPayload;
@@ -275,7 +277,7 @@ const handleCreateInlineTournament = async () => {
   if (!inlineTournamentName.value || !inlineTournamentLocation.value) return;
   try {
     const newId = await TournamentService.createTournament({
-      userId: auth.currentUser?.uid || 'guest_user',
+      userId: getActiveSessionUser()?.uid || 'guest_user',
       name: inlineTournamentName.value.trim(),
       location: inlineTournamentLocation.value.trim(),
       surface: form.value.surface,

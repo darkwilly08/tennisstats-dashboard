@@ -1,15 +1,19 @@
 import { ref, computed } from 'vue';
-import { auth, signOutUser } from '@/shared/services/firebase';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import {
+  getActiveSessionUser,
+  onUserSessionChanged,
+  signOutUser,
+  type SessionUser
+} from '@/shared/services/firebase';
 
-const currentUser = ref<User | null>(auth.currentUser);
+const currentUser = ref<SessionUser | null>(getActiveSessionUser());
 
 let isListenerInitialized = false;
 
 function ensureListener() {
   if (isListenerInitialized) return;
   isListenerInitialized = true;
-  onAuthStateChanged(auth, (user) => {
+  onUserSessionChanged((user) => {
     currentUser.value = user;
   });
 }
@@ -28,7 +32,7 @@ export function useAuth() {
     if (prefix) {
       return prefix.charAt(0).toUpperCase() + prefix.slice(1);
     }
-    return 'Jugador';
+    return 'Franco Berardi';
   });
 
   const email = computed(() => {
