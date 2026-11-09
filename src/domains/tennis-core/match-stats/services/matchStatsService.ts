@@ -15,20 +15,33 @@ export class MatchStatsService {
         }
 
         const matchesRef = collection(db, 'matches');
-        const q = query(
-            matchesRef,
-            where('userId', '==', targetUserId),
-            orderBy('idt', 'desc')
-        );
+        let docs: any[] = [];
+        try {
+            const q = query(
+                matchesRef,
+                where('userId', '==', targetUserId),
+                orderBy('idt', 'desc')
+            );
+            const snapshot = await getDocs(q);
+            docs = snapshot.docs;
+        } catch (queryErr) {
+            console.warn('[MatchStatsService] Indexed query failed, querying without orderBy and sorting locally:', queryErr);
+            const fallbackQ = query(
+                matchesRef,
+                where('userId', '==', targetUserId)
+            );
+            const snapshot = await getDocs(fallbackQ);
+            docs = snapshot.docs;
+        }
 
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => {
+        const items = docs.map(doc => {
             const data = doc.data() as MatchPayload;
             return {
                 id: doc.id,
                 ...data
             };
         });
+        return items.sort((a, b) => (b.idt || 0) - (a.idt || 0));
     }
 
     /**
