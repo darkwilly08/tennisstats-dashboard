@@ -1,14 +1,18 @@
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { MatchStatsService } from '../services/matchStatsService';
 import type { MatchPayload } from '../../_shared/types';
+import { auth } from '@/shared/services/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export function useMatchStats() {
     const matches = ref<MatchPayload[]>([]);
     const loading = ref(true);
+    let lastFetchedUserId: string | null = null;
 
     const fetchMatches = async () => {
         loading.value = true;
         try {
+            lastFetchedUserId = auth.currentUser?.uid ?? null;
             matches.value = await MatchStatsService.getMatches();
         } catch (e) {
             console.error('Error fetching matches:', e);
@@ -17,8 +21,21 @@ export function useMatchStats() {
         }
     };
 
+    let unsubscribeAuth: (() => void) | null = null;
+
     onMounted(() => {
         fetchMatches();
+        unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+            if (user && user.uid !== lastFetchedUserId) {
+                fetchMatches();
+            }
+        });
+    });
+
+    onUnmounted(() => {
+        if (unsubscribeAuth) {
+            unsubscribeAuth();
+        }
     });
 
     const overview = computed(() => MatchStatsService.computeOverviewStats(matches.value));

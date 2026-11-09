@@ -1,16 +1,34 @@
 import type { MatchPayload } from '../../_shared/types';
-
-import { mockMatches } from '../../_shared/mock';
 import type { OverviewStats, MatchRow, PhysiologicalData, PointBreakdownData } from '../types';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { db, auth, getCurrentUser } from '@/shared/services/firebase';
 
 export class MatchStatsService {
     /**
-     * Fetches all matches for the current user.
+     * Fetches all matches for the current authenticated user from Cloud Firestore.
      */
-    static async getMatches(): Promise<MatchPayload[]> {
-        // In the future: return await HttpClient.get<MatchPayload[]>('/api/matches');
-        // Using mock data for now
-        return Promise.resolve(mockMatches);
+    static async getMatches(userId?: string): Promise<MatchPayload[]> {
+        const targetUserId = userId || auth.currentUser?.uid || (await getCurrentUser())?.uid;
+        if (!targetUserId) {
+            console.warn('[MatchStatsService] No authenticated user found to fetch matches.');
+            return [];
+        }
+
+        const matchesRef = collection(db, 'matches');
+        const q = query(
+            matchesRef,
+            where('userId', '==', targetUserId),
+            orderBy('idt', 'desc')
+        );
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => {
+            const data = doc.data() as MatchPayload;
+            return {
+                id: doc.id,
+                ...data
+            };
+        });
     }
 
     /**

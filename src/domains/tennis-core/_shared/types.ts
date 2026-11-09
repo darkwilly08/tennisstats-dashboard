@@ -1,4 +1,6 @@
 export interface MatchPayload {
+    id?: string;
+    userId?: string;
     idt: number;
     fdt?: number;
     rival: string;
