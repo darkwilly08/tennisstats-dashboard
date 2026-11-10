@@ -243,15 +243,16 @@
           <p class="text-xs text-on-surface-variant">
             {{ isUserSubscribed 
                 ? 'Tenés acceso ilimitado al historial completo de partidos, sincronización automática desde tu reloj y métricas cardíacas avanzadas.' 
-                : 'Activá tu suscripción en Google Play o habilita el modo de pruebas para desbloquear todas las funciones del dashboard.' }}
+                : 'Activá tu suscripción en Google Play para desbloquear todas las funciones del dashboard y sincronizar partidos ilimitados.' }}
           </p>
 
-          <div class="p-4 rounded-xl bg-surface-variant/40 border border-outline-variant space-y-3">
+          <!-- Developer Bypass (Only visible in local development environment: npm run dev) -->
+          <div v-if="isDevMode" class="p-4 rounded-xl bg-surface-variant/40 border border-outline-variant space-y-3">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <div class="font-bold text-xs sm:text-sm text-on-surface">Bypass de Suscripción PRO (Desarrollador)</div>
+                <div class="font-bold text-xs sm:text-sm text-on-surface">Bypass de Suscripción PRO (Solo Desarrollo Local)</div>
                 <div class="text-[11px] sm:text-xs text-on-surface-variant mt-0.5">
-                  Permite probar el dashboard completo y omitir el paywall sin requerir Google Play en este dispositivo.
+                  Herramienta de depuración visible únicamente en entorno de desarrollo.
                 </div>
               </div>
               <button
@@ -312,6 +313,7 @@ const {
   logout 
 } = useAuth();
 
+const isDevMode = import.meta.env.DEV;
 const isBypassActive = ref(isDevSubscriptionBypassEnabled());
 
 const toggleSubBypass = () => {
