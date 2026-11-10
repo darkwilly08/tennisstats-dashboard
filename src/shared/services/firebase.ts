@@ -99,12 +99,41 @@ export interface UserSubscription {
   expiryDateMs?: number;
 }
 
+const DEV_SUB_BYPASS_KEY = 'tennisstats_dev_subscription_override';
+
+export function isDevSubscriptionBypassEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(DEV_SUB_BYPASS_KEY) === 'true';
+}
+
+export function setDevSubscriptionBypass(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  if (enabled) {
+    localStorage.setItem(DEV_SUB_BYPASS_KEY, 'true');
+    userSubscription.value = {
+      isSubscribed: true,
+      status: 'active',
+      plan: 'developer_bypass'
+    };
+  } else {
+    localStorage.removeItem(DEV_SUB_BYPASS_KEY);
+    const active = getActiveSessionUser();
+    checkAndListenSubscription(active?.uid || null);
+  }
+}
+
 export const userSubscription = ref<UserSubscription>({
-  isSubscribed: false,
-  status: 'none'
+  isSubscribed: isDevSubscriptionBypassEnabled(),
+  status: isDevSubscriptionBypassEnabled() ? 'active' : 'none',
+  plan: isDevSubscriptionBypassEnabled() ? 'developer_bypass' : undefined
 });
 
-export const isUserSubscribed = computed(() => userSubscription.value.isSubscribed);
+export const isUserSubscribed = computed(() => {
+  if (isDevSubscriptionBypassEnabled()) {
+    return true;
+  }
+  return userSubscription.value.isSubscribed;
+});
 
 let subscriptionDocUnsub: (() => void) | null = null;
 
@@ -112,6 +141,15 @@ export function checkAndListenSubscription(userId: string | null) {
   if (subscriptionDocUnsub) {
     subscriptionDocUnsub();
     subscriptionDocUnsub = null;
+  }
+
+  if (isDevSubscriptionBypassEnabled()) {
+    userSubscription.value = {
+      isSubscribed: true,
+      status: 'active',
+      plan: 'developer_bypass'
+    };
+    return;
   }
 
   if (!userId) {
@@ -157,12 +195,40 @@ export function checkAndListenSubscription(userId: string | null) {
   }
 }
 
-// Reactive/shared native user state for immediate WebView session availability
-let nativeSessionUser: SessionUser | null = null;
+// Persistent session cache for instant, flicker-free subsequent launches
+const SESSION_CACHE_KEY = 'tennisstats_active_session';
+
+function getCachedSession(): SessionUser | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SESSION_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as SessionUser;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedSession(user: SessionUser | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (user) {
+      localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(SESSION_CACHE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+// Reactive/shared native user state initialized with cached session immediately
+let nativeSessionUser: SessionUser | null = getCachedSession();
 type SessionListener = (user: SessionUser | null) => void;
 const sessionListeners = new Set<SessionListener>();
 
 function notifySessionListeners(user: SessionUser | null) {
+  saveCachedSession(user);
   checkAndListenSubscription(user?.uid || null);
   for (const listener of sessionListeners) {
     try {
@@ -175,12 +241,17 @@ function notifySessionListeners(user: SessionUser | null) {
 
 export function getActiveSessionUser(): SessionUser | null {
   if (auth.currentUser) {
-    return {
+    const user: SessionUser = {
       uid: auth.currentUser.uid,
       displayName: auth.currentUser.displayName || nativeSessionUser?.displayName || null,
       email: auth.currentUser.email || nativeSessionUser?.email || null,
       photoURL: auth.currentUser.photoURL || nativeSessionUser?.photoURL || null
     };
+    saveCachedSession(user);
+    return user;
+  }
+  if (!nativeSessionUser) {
+    nativeSessionUser = getCachedSession();
   }
   return nativeSessionUser;
 }
@@ -200,11 +271,13 @@ export function onUserSessionChanged(callback: SessionListener): () => void {
         email: fbUser.email || nativeSessionUser?.email || null,
         photoURL: fbUser.photoURL || nativeSessionUser?.photoURL || null
       };
+      saveCachedSession(merged);
       checkAndListenSubscription(merged.uid);
       callback(merged);
     } else {
-      checkAndListenSubscription(nativeSessionUser?.uid || null);
-      callback(nativeSessionUser);
+      const fallback = nativeSessionUser || getCachedSession();
+      checkAndListenSubscription(fallback?.uid || null);
+      callback(fallback);
     }
   });
 
@@ -259,6 +332,7 @@ export const getCurrentUser = (): Promise<User | SessionUser | null> => {
  */
 export async function signOutUser(): Promise<void> {
   nativeSessionUser = null;
+  saveCachedSession(null);
   notifySessionListeners(null);
   try {
     await firebaseSignOut(auth);
@@ -280,10 +354,24 @@ googleAuthProvider.setCustomParameters({
 });
 
 /**
- * Initiates Google Sign-In using Firebase Auth popup (ideal for Desktop and standard browsers).
+ * Initiates Google Sign-In using native shell if running in WebView, or Firebase Auth popup on web.
  * Gracefully falls back to redirect if popup is blocked by the browser.
  */
 export async function signInWithGoogle(): Promise<UserCredential | null> {
+  // If running inside Flutter WebView shell, delegate to native Google Sign-in bridge
+  if (typeof window !== 'undefined' && window.flutter_inappwebview?.callHandler) {
+    try {
+      const res = await window.flutter_inappwebview.callHandler('requestNativeLogin') as { success?: boolean; session?: unknown; error?: string } | undefined;
+      if (res && res.session) {
+        return await authenticateWithNativeSession(res.session);
+      }
+      return null;
+    } catch (err) {
+      console.error('[WebView Auth] Error requesting native login via bridge:', err);
+      throw err;
+    }
+  }
+
   try {
     const userCredential = await signInWithPopup(auth, googleAuthProvider);
     return userCredential;
@@ -297,6 +385,12 @@ export async function signInWithGoogle(): Promise<UserCredential | null> {
       console.warn('[Firebase Auth] Popup blocked by browser, attempting redirect fallback...');
       await signInWithRedirect(auth, googleAuthProvider);
       return null;
+    }
+    if (authError?.code === 'auth/unauthorized-domain') {
+      const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
+      console.error(
+        `[Firebase Auth] Error auth/unauthorized-domain: El dominio "${currentHost}" no está autorizado en Firebase Authentication. Agrega "${currentHost}" en Firebase Console -> Authentication -> Settings -> Authorized domains.`
+      );
     }
     console.error('[Firebase Auth] Error during signInWithGoogle:', error);
     throw error;
