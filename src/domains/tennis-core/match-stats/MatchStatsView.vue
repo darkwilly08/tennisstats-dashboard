@@ -284,10 +284,42 @@ const filteredMatches = computed(() => {
     } else if (filters.value.datePreset === '30d') {
       const minDate = now - 30 * 86400000;
       list = list.filter(m => m.idt >= minDate);
+    } else if (filters.value.datePreset === '3m') {
+      const minDate = now - 90 * 86400000;
+      list = list.filter(m => m.idt >= minDate);
+    } else if (filters.value.datePreset === '6m') {
+      const minDate = now - 180 * 86400000;
+      list = list.filter(m => m.idt >= minDate);
     } else if (filters.value.datePreset === 'year') {
       const startOfYear = new Date(new Date().getFullYear(), 0, 1).getTime();
       list = list.filter(m => m.idt >= startOfYear);
     }
+  }
+
+  // 8. Duration in Sets
+  if (filters.value.setsCount && filters.value.setsCount !== 'all') {
+    const targetSets = parseInt(filters.value.setsCount, 10);
+    list = list.filter(m => (m.sets?.length || 0) === targetSets);
+  }
+
+  // 9. Key Tennis Switches
+  if (filters.value.withTiebreak) {
+    list = list.filter(m => m.tiebreak === true || (m.sets || []).some(s => s.tiebreak != null || s.me === 7 || s.rival === 7));
+  }
+
+  if (filters.value.comebackOnly) {
+    list = list.filter(m => {
+      if (!m.win || !m.sets || m.sets.length < 2) return false;
+      const firstSet = m.sets[0];
+      return Boolean(firstSet && typeof firstSet.rival === 'number' && typeof firstSet.me === 'number' && firstSet.rival > firstSet.me);
+    });
+  }
+
+  if (filters.value.withBagel) {
+    list = list.filter(m => {
+      if (!m.sets) return false;
+      return m.sets.some(s => (s.me === 6 && s.rival === 0) || (s.rival === 6 && s.me === 0));
+    });
   }
 
   return list;

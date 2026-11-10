@@ -102,19 +102,19 @@
         </select>
       </div>
 
-      <!-- Actions -->
-      <div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant">
+      <!-- Actions (Full width stacked on mobile) -->
+      <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-3 border-t border-outline-variant w-full">
         <button 
           type="button"
           @click="emit('close')"
-          class="btn-secondary text-sm"
+          class="btn-secondary text-sm w-full sm:w-auto"
         >
           Cancelar
         </button>
         <button 
           type="submit"
           :disabled="saving"
-          class="btn-primary text-sm disabled:opacity-50"
+          class="btn-primary text-sm disabled:opacity-50 w-full sm:w-auto"
         >
           <span v-if="saving" class="material-icons-round animate-spin text-sm mr-1">refresh</span>
           <span>Guardar Torneo</span>

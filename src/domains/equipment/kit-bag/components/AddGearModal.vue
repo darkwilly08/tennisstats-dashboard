@@ -120,17 +120,17 @@
         </div>
       </div>
 
-      <div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant">
+      <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-3 border-t border-outline-variant w-full">
         <button
           type="button"
           @click="emit('close')"
-          class="btn-secondary text-sm"
+          class="btn-secondary text-sm w-full sm:w-auto"
         >
           Cancelar
         </button>
         <button
           type="submit"
-          class="btn-primary text-sm"
+          class="btn-primary text-sm w-full sm:w-auto"
         >
           Guardar Equipo
         </button>

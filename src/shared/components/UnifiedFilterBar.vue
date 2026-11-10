@@ -127,7 +127,7 @@ export interface FilterChip {
 
 interface FilterTag {
   id: string;
-  type: 'outcome' | 'matchType' | 'surface' | 'tournament' | 'rival' | 'datePreset' | 'search';
+  type: 'outcome' | 'matchType' | 'surface' | 'tournament' | 'rival' | 'datePreset' | 'search' | 'tiebreak' | 'comeback' | 'bagel' | 'setsCount';
   value: any;
   label: string;
 }
@@ -198,7 +198,13 @@ const activeFilterTags = computed<FilterTag[]>(() => {
 
   if (f.surfaces && f.surfaces.length > 0) {
     for (const s of f.surfaces) {
-      const surfaceName = s === 'Clay' ? t('filters.clay', 'Polvo de ladrillo') : s === 'Hard' ? t('filters.hard', 'Cemento') : t('filters.grass', 'Césped');
+      const surfaceName = s === 'Clay'
+        ? t('filters.clay', 'Polvo de ladrillo')
+        : s === 'Hard'
+          ? t('filters.hard', 'Cemento')
+          : s === 'Grass'
+            ? t('filters.grass', 'Césped')
+            : t('filters.indoor', 'Cubierta / Indoor');
       tags.push({
         id: `surface_${s}`,
         type: 'surface',
@@ -206,6 +212,42 @@ const activeFilterTags = computed<FilterTag[]>(() => {
         label: `${t('filters.tagSurface', 'Superficie')}: ${surfaceName}`
       });
     }
+  }
+
+  if (f.setsCount && f.setsCount !== 'all') {
+    tags.push({
+      id: `setsCount_${f.setsCount}`,
+      type: 'setsCount',
+      value: f.setsCount,
+      label: `${t('filters.tagSets', 'Sets')}: ${f.setsCount}`
+    });
+  }
+
+  if (f.withTiebreak) {
+    tags.push({
+      id: 'switch_tiebreak',
+      type: 'tiebreak',
+      value: true,
+      label: t('filters.tagTiebreak', 'Tiebreak')
+    });
+  }
+
+  if (f.comebackOnly) {
+    tags.push({
+      id: 'switch_comeback',
+      type: 'comeback',
+      value: true,
+      label: t('filters.tagComeback', 'Remontada')
+    });
+  }
+
+  if (f.withBagel) {
+    tags.push({
+      id: 'switch_bagel',
+      type: 'bagel',
+      value: true,
+      label: t('filters.tagBagel', 'Set 6-0')
+    });
   }
 
   if (f.tournaments && f.tournaments.length > 0) {
@@ -236,6 +278,8 @@ const activeFilterTags = computed<FilterTag[]>(() => {
     let presetLabel: string = f.datePreset;
     if (f.datePreset === '7d') presetLabel = t('filters.last7Days', 'Últimos 7 días');
     else if (f.datePreset === '30d') presetLabel = t('filters.last30Days', 'Últimos 30 días');
+    else if (f.datePreset === '3m') presetLabel = t('filters.last3Months', 'Últimos 3 meses');
+    else if (f.datePreset === '6m') presetLabel = t('filters.last6Months', 'Últimos 6 meses');
     else if (f.datePreset === 'year') presetLabel = t('filters.thisYear', 'Este año');
     tags.push({
       id: `datePreset_${f.datePreset}`,
@@ -309,6 +353,14 @@ const removeTag = (tag: FilterTag) => {
     updated.rivals = updated.rivals.filter(r => r !== tag.value);
   } else if (tag.type === 'datePreset') {
     updated.datePreset = 'all';
+  } else if (tag.type === 'tiebreak') {
+    updated.withTiebreak = false;
+  } else if (tag.type === 'comeback') {
+    updated.comebackOnly = false;
+  } else if (tag.type === 'bagel') {
+    updated.withBagel = false;
+  } else if (tag.type === 'setsCount') {
+    updated.setsCount = 'all';
   }
 
   emit('update:filters', updated);
@@ -325,7 +377,13 @@ const clearAllFilters = () => {
       surfaces: [],
       tournaments: [],
       rivals: [],
-      datePreset: 'all'
+      datePreset: 'all',
+      setsCount: 'all',
+      withTiebreak: false,
+      comebackOnly: false,
+      withBagel: false,
+      opponentHand: 'all',
+      opponentBackhand: 'all',
     });
   }
   emit('clearAll');
