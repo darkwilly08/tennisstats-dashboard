@@ -119,7 +119,7 @@
             : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">insights</span>
-          <span>Estadísticas de Partidos</span>
+          <span>{{ t('nav.analytics', 'Estadísticas de Partidos') }}</span>
         </router-link>
 
         <router-link 
@@ -131,7 +131,7 @@
             : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">emoji_events</span>
-          <span>Torneos</span>
+          <span>{{ t('nav.tournaments', 'Torneos') }}</span>
         </router-link>
 
         <router-link 
@@ -143,7 +143,7 @@
             : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">work</span>
-          <span>Kit Bag / Equipamiento</span>
+          <span>{{ t('nav.kitBag', 'Kit Bag / Equipamiento') }}</span>
         </router-link>
 
         <router-link 
@@ -155,21 +155,21 @@
             : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">search</span>
-          <span>Rivales & Scouting</span>
+          <span>{{ t('nav.scouting', 'Rivales & Scouting') }}</span>
         </router-link>
 
         <router-link 
           to="/settings"
           @click="isDrawerOpen = false"
           role="button"
-          aria-label="Configuración & Health Connect"
+          :aria-label="t('nav.settings', 'Configuración & Health Connect')"
           class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px]"
           :class="isRouteActive(['/settings']) 
             ? 'bg-primary-container text-on-primary-container font-bold shadow-sm' 
             : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">settings</span>
-          <span>Configuración</span>
+          <span>{{ t('nav.settingsShort', 'Configuración') }}</span>
         </router-link>
       </nav>
 
@@ -177,10 +177,11 @@
       <div class="p-4 border-t border-outline-variant">
         <button 
           @click="handleSignOut"
+          :aria-label="t('nav.logout', 'Cerrar Sesión')"
           class="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-xs sm:text-sm font-semibold min-h-[44px]"
         >
           <span class="material-icons-round text-lg">logout</span>
-          <span>Cerrar Sesión</span>
+          <span>{{ t('nav.logout', 'Cerrar Sesión') }}</span>
         </button>
       </div>
     </aside>
@@ -192,10 +193,12 @@
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '@/shared/composables/useAuth';
+import { useI18n } from '@/shared/i18n';
 import SnackbarContainer from '@/shared/components/SnackbarContainer.vue';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const { user, displayName, email, initials, logout } = useAuth();
 
 const isDrawerOpen = ref(false);
@@ -203,19 +206,19 @@ const isDrawerOpen = ref(false);
 const activePageTitle = computed(() => {
   const path = route.path;
   if (path === '/' || path.startsWith('/analytics')) {
-    return 'MATCH ANALYTICS';
+    return t('header.analytics', 'MATCH ANALYTICS');
   }
   if (path.startsWith('/tournament')) {
-    return 'TOURNAMENT HUB';
+    return t('header.tournaments', 'TOURNAMENT HUB');
   }
   if (path.startsWith('/kit-bag')) {
-    return 'THE KIT BAG';
+    return t('header.kitBag', 'THE KIT BAG');
   }
   if (path.startsWith('/scouting')) {
-    return 'SCOUTING REPORT';
+    return t('header.scouting', 'SCOUTING REPORT');
   }
   if (path.startsWith('/settings')) {
-    return 'CONFIGURACIÓN';
+    return t('header.settings', 'CONFIGURACIÓN');
   }
   return 'TENNIS STATS';
 });

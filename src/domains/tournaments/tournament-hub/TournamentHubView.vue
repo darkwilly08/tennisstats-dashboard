@@ -5,18 +5,22 @@
       <!-- Top Actions Bar with subtle M3 icon button -->
       <div class="flex items-center justify-between gap-4">
         <div>
-          <h2 class="text-xl sm:text-2xl font-display font-bold text-on-surface">Torneos & Competiciones</h2>
-          <p class="text-xs sm:text-sm text-on-surface-variant">Administra tus cuadros, sedes y estadísticas oficiales.</p>
+          <h2 class="text-xl sm:text-2xl font-display font-bold text-on-surface">
+            {{ t('tournaments.title', 'Torneos & Competiciones') }}
+          </h2>
+          <p class="text-xs sm:text-sm text-on-surface-variant">
+            {{ t('tournaments.subtitle', 'Administra tus cuadros, sedes y estadísticas oficiales.') }}
+          </p>
         </div>
 
         <button 
           @click="showCreateModal = true"
-          aria-label="Crear Torneo"
-          title="Crear Torneo"
+          :aria-label="t('tournaments.create', 'Crear Torneo')"
+          :title="t('tournaments.create', 'Crear Torneo')"
           class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary text-on-primary hover:opacity-90 transition-all shadow-sm flex items-center justify-center shrink-0 min-h-[40px]"
         >
           <span class="material-icons-round text-xl sm:text-2xl">add</span>
-          <span class="sr-only">Crear Torneo</span>
+          <span class="sr-only">{{ t('tournaments.create', 'Crear Torneo') }}</span>
         </button>
       </div>
 
@@ -26,27 +30,70 @@
         v-model:searchQuery="tournamentSearch"
         v-model:activeFilter="tournamentFilter"
         :chips="filterChips"
-        placeholder="Buscar torneo por nombre o club..."
+        :placeholder="t('tournaments.searchPlaceholder', 'Buscar torneo por nombre o club...')"
         :totalCount="filteredTournaments.length"
+        :showAdvancedButton="false"
       />
 
       <!-- If Tournaments Exist -->
       <div v-if="tournaments.length > 0" class="space-y-6">
         
-        <!-- Tournament Selector Pills -->
-        <div v-if="filteredTournaments.length > 0" class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mr-1">Tus torneos:</span>
-          <button
-            v-for="t in filteredTournaments"
-            :key="t.id"
-            @click="selectTournament(t)"
-            class="px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 min-h-[40px]"
-            :class="activeTournament?.id === t.id 
-              ? 'bg-primary text-on-primary shadow-sm font-bold' 
-              : 'bg-surface text-on-surface border border-outline hover:bg-surface-variant'"
-          >
-            {{ t.name }}
-          </button>
+        <!-- Elegant Material 3 Tournament Selector Bar -->
+        <div v-if="filteredTournaments.length > 0" class="glass-panel bg-surface text-on-surface p-4 sm:p-5 rounded-2xl border border-outline space-y-3">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+                <span class="material-icons-round text-xl">emoji_events</span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block">
+                  {{ t('tournaments.selected', 'Torneo Seleccionado') }}
+                </span>
+                <span class="text-base sm:text-lg font-bold text-on-surface truncate block">
+                  {{ activeTournament?.name || t('tournaments.selectPrompt', 'Selecciona un torneo...') }}
+                </span>
+              </div>
+            </div>
+
+            <!-- M3 Tournament Dropdown Select for Fast Switching -->
+            <div class="w-full sm:w-72 shrink-0">
+              <select
+                :value="activeTournament?.id"
+                @change="handleSelectDropdown"
+                class="m3-input text-xs sm:text-sm font-semibold cursor-pointer"
+              >
+                <option v-for="t in filteredTournaments" :key="t.id" :value="t.id">
+                  {{ t.name }} ({{ formatStatus(t.status) }})
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Cohesive Responsive Tournament Chips Grid -->
+          <div v-if="filteredTournaments.length > 1" class="flex flex-wrap items-center gap-2 pt-2 border-t border-outline-variant">
+            <button
+              v-for="t in filteredTournaments"
+              :key="t.id"
+              type="button"
+              @click="selectTournament(t)"
+              class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 border min-h-[40px]"
+              :class="activeTournament?.id === t.id
+                ? 'bg-primary text-on-primary border-primary shadow-sm font-bold'
+                : 'bg-surface-variant text-on-surface border-outline-variant hover:border-outline hover:text-on-surface'"
+            >
+              <span class="material-icons-round text-sm" :class="activeTournament?.id === t.id ? 'text-on-primary' : 'text-primary'">
+                {{ t.status === 'active' ? 'play_circle' : t.status === 'upcoming' ? 'schedule' : 'check_circle' }}
+              </span>
+              <span class="truncate max-w-[160px]">{{ t.name }}</span>
+              <span
+                v-if="t.surface"
+                class="px-1.5 py-0.2 rounded text-[10px] uppercase font-bold"
+                :class="activeTournament?.id === t.id ? 'bg-black/20 text-on-primary' : 'bg-surface text-on-surface-variant'"
+              >
+                {{ t.surface }}
+              </span>
+            </button>
+          </div>
         </div>
 
         <!-- Active Tournament Content -->
@@ -70,9 +117,9 @@
                 <div class="w-12 h-12 mx-auto rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center">
                   <span class="material-icons-round text-2xl">account_tree</span>
                 </div>
-                <h3 class="text-base font-bold text-on-surface">Cuadro en Espera</h3>
+                <h3 class="text-base font-bold text-on-surface">{{ t('tournaments.waitingBracket', 'Cuadro en Espera') }}</h3>
                 <p class="text-xs sm:text-sm text-on-surface-variant max-w-sm mx-auto">
-                  Los cruces de este torneo se generarán a medida que registres tus partidos asociados desde el reloj.
+                  {{ t('tournaments.waitingBracketDesc', 'Los cruces de este torneo se generarán a medida que registres tus partidos asociados desde el reloj.') }}
                 </p>
               </div>
 
@@ -81,10 +128,10 @@
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <span class="material-icons-round text-primary text-xl">sports_tennis</span>
-                    <h3 class="text-base font-bold text-on-surface">Partidos Oficiales Jugados</h3>
+                    <h3 class="text-base font-bold text-on-surface">{{ t('tournaments.officialMatches', 'Partidos Oficiales Jugados') }}</h3>
                   </div>
                   <span class="text-xs font-medium text-on-surface-variant">
-                    {{ tournamentMatches.length }} partido(s)
+                    {{ tournamentMatches.length }} {{ t('tournaments.matchesCount', 'partido(s)') }}
                   </span>
                 </div>
 
@@ -121,7 +168,7 @@
                 </div>
 
                 <div v-else class="text-xs sm:text-sm text-on-surface-variant text-center py-4">
-                  Aún no registras partidos para este torneo. Asocia un partido desde la pantalla de estadísticas o registra un partido en tu Wear OS.
+                  {{ t('tournaments.noMatchesInTournament', 'Aún no registras partidos para este torneo. Asocia un partido desde la pantalla de estadísticas o registra un partido en tu Wear OS.') }}
                 </div>
               </div>
             </div>
@@ -134,9 +181,9 @@
         <div class="w-16 h-16 mx-auto rounded-2xl bg-primary-container text-on-primary-container flex items-center justify-center shadow-sm">
           <span class="material-icons-round text-3xl">emoji_events</span>
         </div>
-        <h3 class="text-xl font-bold text-on-surface">No tienes torneos registrados aún</h3>
+        <h3 class="text-xl font-bold text-on-surface">{{ t('tournaments.empty', 'No tienes torneos registrados aún') }}</h3>
         <p class="text-sm text-on-surface-variant">
-          Crea tu primer torneo para asociar tus partidos oficiales, registrar superficies y seguir tu progresión competitiva.
+          {{ t('tournaments.emptyDesc', 'Crea tu primer torneo para asociar tus partidos oficiales, registrar superficies y seguir tu progresión competitiva.') }}
         </p>
         <div class="flex justify-center pt-2">
           <button 
@@ -144,7 +191,7 @@
             class="bg-primary text-on-primary hover:opacity-90 transition-all font-medium px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center min-h-[44px]"
           >
             <span class="material-icons-round text-lg mr-2">add</span>
-            <span>Crear Torneo</span>
+            <span>{{ t('tournaments.create', 'Crear Torneo') }}</span>
           </button>
         </div>
       </div>
@@ -175,6 +222,9 @@ import WeatherWidget from './components/WeatherWidget.vue';
 import CreateTournamentModal from './components/CreateTournamentModal.vue';
 import UnifiedFilterBar, { type FilterChip } from '@/shared/components/UnifiedFilterBar.vue';
 import type { MatchPayload } from '@/domains/tennis-core/_shared/types';
+import { useI18n } from '@/shared/i18n';
+
+const { t } = useI18n();
 
 const {
   tournaments,
@@ -192,27 +242,39 @@ const tournamentSearch = ref('');
 const tournamentFilter = ref('all');
 
 const filterChips = computed<FilterChip[]>(() => [
-  { label: 'Todos', value: 'all', count: tournaments.value.length },
-  { label: 'En Curso', value: 'active', count: tournaments.value.filter(t => t.status === 'active').length },
-  { label: 'Próximos', value: 'upcoming', count: tournaments.value.filter(t => t.status === 'upcoming').length },
-  { label: 'Finalizados', value: 'completed', count: tournaments.value.filter(t => t.status === 'completed').length },
+  { label: t('tournaments.all', 'Todos'), value: 'all', count: tournaments.value.length },
+  { label: t('tournaments.active', 'En Curso'), value: 'active', count: tournaments.value.filter(item => item.status === 'active').length },
+  { label: t('tournaments.upcoming', 'Próximos'), value: 'upcoming', count: tournaments.value.filter(item => item.status === 'upcoming').length },
+  { label: t('tournaments.completed', 'Finalizados'), value: 'completed', count: tournaments.value.filter(item => item.status === 'completed').length },
 ]);
 
 const filteredTournaments = computed(() => {
   let list = tournaments.value;
   if (tournamentFilter.value !== 'all') {
-    list = list.filter(t => t.status === tournamentFilter.value);
+    list = list.filter(item => item.status === tournamentFilter.value);
   }
   const q = tournamentSearch.value.trim().toLowerCase();
   if (q) {
-    list = list.filter(t => {
-      const name = t.name.toLowerCase();
-      const loc = typeof t.location === 'string' ? t.location.toLowerCase() : '';
+    list = list.filter(item => {
+      const name = item.name.toLowerCase();
+      const loc = typeof item.location === 'string' ? item.location.toLowerCase() : '';
       return name.includes(q) || loc.includes(q);
     });
   }
   return list;
 });
+
+const handleSelectDropdown = (e: Event) => {
+  const targetId = (e.target as HTMLSelectElement).value;
+  const found = tournaments.value.find(item => item.id === targetId);
+  if (found) selectTournament(found);
+};
+
+const formatStatus = (status: string) => {
+  if (status === 'active') return t('tournaments.active', 'En Curso');
+  if (status === 'upcoming') return t('tournaments.upcoming', 'Próximo');
+  return t('tournaments.completed', 'Finalizado');
+};
 
 const formatMatchScore = (m: MatchPayload) => {
   if (m.sets && m.sets.length > 0) {

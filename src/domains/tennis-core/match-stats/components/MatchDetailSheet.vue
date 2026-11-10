@@ -1,8 +1,8 @@
 <template>
   <BottomSheet
     :isOpen="isOpen"
-    title="Detalles del Partido"
-    subtitle="Métricas físicas y edición de datos"
+    :title="t('matchDetail.title', 'Detalles del Partido')"
+    :subtitle="t('matchDetail.subtitle', 'Métricas físicas y edición de datos')"
     icon="sports_tennis"
     @close="emit('close')"
   >
@@ -20,7 +20,7 @@
           </div>
           <div>
             <div class="font-bold text-sm sm:text-base">
-              {{ match.win ? 'Victoria' : 'Derrota' }} vs {{ form.rival || 'Rival' }}
+              {{ match.win ? t('matchDetail.win', 'Victoria') : t('matchDetail.loss', 'Derrota') }} vs {{ form.rival || 'Rival' }}
             </div>
             <div class="text-xs opacity-80">
               {{ formattedDate }} • {{ formattedDuration }}
@@ -35,7 +35,7 @@
 
       <!-- Set-by-Set Breakdown Badges -->
       <div v-if="match.sets && match.sets.length > 0" class="space-y-2">
-        <label class="m3-label">Desglose por Set</label>
+        <label class="m3-label">{{ t('matchDetail.setsBreakdown', 'Desglose por Set') }}</label>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <div 
             v-for="s in match.sets" 
@@ -53,14 +53,14 @@
 
       <!-- Physiological & Physical Metrics Grid -->
       <div class="space-y-2">
-        <label class="m3-label">Métricas Físicas (Wear OS)</label>
+        <label class="m3-label">{{ t('matchDetail.physicalMetrics', 'Métricas Físicas (Wear OS)') }}</label>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           <div class="p-3 rounded-xl bg-surface-variant border border-outline text-center">
             <span class="material-icons-round text-amber-500 text-lg">local_fire_department</span>
             <div class="font-display font-bold text-base text-on-surface">
               {{ match.health_metrics?.active_calories || 0 }}
             </div>
-            <div class="text-[10px] text-on-surface-variant font-medium uppercase">Calorías</div>
+            <div class="text-[10px] text-on-surface-variant font-medium uppercase">{{ t('matchDetail.calories', 'Calorías') }}</div>
           </div>
 
           <div class="p-3 rounded-xl bg-surface-variant border border-outline text-center">
@@ -68,7 +68,7 @@
             <div class="font-display font-bold text-base text-on-surface">
               {{ match.health_metrics?.heart_rate?.avg || 0 }} <span class="text-xs font-normal">bpm</span>
             </div>
-            <div class="text-[10px] text-on-surface-variant font-medium uppercase">FC Prom (Max {{ match.health_metrics?.heart_rate?.max || 0 }})</div>
+            <div class="text-[10px] text-on-surface-variant font-medium uppercase">{{ t('matchDetail.avgHr', 'FC Prom') }} ({{ t('matchDetail.maxHr', 'Max') }} {{ match.health_metrics?.heart_rate?.max || 0 }})</div>
           </div>
 
           <div class="p-3 rounded-xl bg-surface-variant border border-outline text-center">
@@ -76,7 +76,7 @@
             <div class="font-display font-bold text-base text-on-surface">
               {{ ((match.health_metrics?.total_steps || 0) * 0.8 / 1000).toFixed(1) }} <span class="text-xs font-normal">km</span>
             </div>
-            <div class="text-[10px] text-on-surface-variant font-medium uppercase">Distancia</div>
+            <div class="text-[10px] text-on-surface-variant font-medium uppercase">{{ t('matchDetail.distance', 'Distancia') }}</div>
           </div>
 
           <div class="p-3 rounded-xl bg-surface-variant border border-outline text-center">
@@ -84,7 +84,7 @@
             <div class="font-display font-bold text-base text-on-surface">
               {{ match.me_breaks || 0 }}/{{ match.me_break_points || 0 }}
             </div>
-            <div class="text-[10px] text-on-surface-variant font-medium uppercase">Quiebres Ganados</div>
+            <div class="text-[10px] text-on-surface-variant font-medium uppercase">{{ t('matchDetail.breaksWon', 'Quiebres Ganados') }}</div>
           </div>
         </div>
       </div>
@@ -93,16 +93,16 @@
       <form @submit.prevent="handleSave" class="space-y-4 pt-2 border-t border-outline-variant">
         <!-- Rival Name -->
         <div>
-          <label class="m3-label">Nombre del Rival *</label>
+          <label class="m3-label">{{ t('matchDetail.rival', 'Nombre del Rival') }} *</label>
           <input
             v-model="form.rival"
             type="text"
             required
-            placeholder="Ej: Carlos Alcaraz, Marian"
+            :placeholder="t('matchDetail.rivalPlaceholder', 'Ej: Carlos Alcaraz, Marian')"
             class="m3-input"
           />
           <div v-if="rivalSuggestions.length > 0" class="flex flex-wrap items-center gap-1.5 mt-2">
-            <span class="text-[11px] text-on-surface-variant">Sugerencias:</span>
+            <span class="text-[11px] text-on-surface-variant">{{ t('matchDetail.suggestions', 'Sugerencias:') }}</span>
             <button
               v-for="sug in rivalSuggestions"
               :key="sug"
@@ -117,7 +117,7 @@
 
         <!-- Clasificación: Amistoso vs Torneo Oficial -->
         <div>
-          <label class="m3-label">Clasificación</label>
+          <label class="m3-label">{{ t('matchDetail.classification', 'Clasificación') }}</label>
           <div class="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -128,7 +128,7 @@
                 : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
               <span class="material-icons-round text-base">handshake</span>
-              <span>Partido Amistoso</span>
+              <span>{{ t('matchDetail.friendly', 'Partido Amistoso') }}</span>
             </button>
             <button
               type="button"
@@ -139,34 +139,34 @@
                 : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
               <span class="material-icons-round text-base">emoji_events</span>
-              <span>Torneo Oficial</span>
+              <span>{{ t('matchDetail.official', 'Torneo Oficial') }}</span>
             </button>
           </div>
         </div>
 
         <!-- Torneo Selector (If Torneo Oficial) -->
         <div v-if="form.matchType === 'tournament'" class="space-y-2 p-3.5 rounded-xl bg-surface-variant border border-outline">
-          <label class="m3-label mb-1">Torneo Asociado *</label>
+          <label class="m3-label mb-1">{{ t('matchDetail.tournament', 'Torneo Asociado') }} *</label>
           <select 
             v-model="form.tournamentId" 
             @change="handleTournamentChanged"
             class="m3-input"
           >
-            <option value="">Selecciona un torneo...</option>
-            <option v-for="t in userTournaments" :key="t.id" :value="t.id">
-              {{ t.name }} ({{ t.location }})
+            <option value="">{{ t('matchDetail.selectTournament', 'Selecciona un torneo...') }}</option>
+            <option v-for="tItem in userTournaments" :key="tItem.id" :value="tItem.id">
+              {{ tItem.name }} ({{ tItem.location }})
             </option>
           </select>
           <p v-if="selectedTournamentLocation" class="text-xs text-primary font-medium flex items-center gap-1 pt-1">
             <span class="material-icons-round text-xs">location_on</span>
-            <span>Sede heredada: {{ selectedTournamentLocation }}</span>
+            <span>{{ t('matchDetail.inheritedLocation', 'Sede heredada:') }} {{ selectedTournamentLocation }}</span>
           </p>
         </div>
 
         <!-- Standalone Location Input (Hidden if Torneo Oficial and location is inherited) -->
         <div v-if="form.matchType !== 'tournament' || !selectedTournamentLocation">
           <div class="flex items-center justify-between mb-1.5">
-            <label class="m3-label mb-0">Lugar / Club</label>
+            <label class="m3-label mb-0">{{ t('matchDetail.location', 'Lugar / Club') }}</label>
             <button 
               type="button"
               @click="requestLocation"
@@ -174,20 +174,20 @@
               class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
             >
               <span class="material-icons-round text-xs" :class="{ 'animate-spin': locating }">my_location</span>
-              <span>📍 Usar ubicación actual</span>
+              <span>{{ t('matchDetail.useLocation', '📍 Usar ubicación actual') }}</span>
             </button>
           </div>
           <input
             v-model="form.location"
             type="text"
-            placeholder="Ej: Buenos Aires Lawn Tennis"
+            :placeholder="t('matchDetail.locationPlaceholder', 'Ej: Buenos Aires Lawn Tennis')"
             class="m3-input"
           />
         </div>
 
         <!-- Superficie -->
         <div>
-          <label class="m3-label">Superficie</label>
+          <label class="m3-label">{{ t('matchDetail.surface', 'Superficie') }}</label>
           <div class="grid grid-cols-3 gap-2">
             <button
               type="button"
@@ -197,7 +197,7 @@
                 ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
                 : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
-              Polvo de ladrillo
+              {{ t('matchDetail.clay', 'Polvo de ladrillo') }}
             </button>
             <button
               type="button"
@@ -207,7 +207,7 @@
                 ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
                 : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
-              Cemento / Rápida
+              {{ t('matchDetail.hard', 'Cemento / Rápida') }}
             </button>
             <button
               type="button"
@@ -217,7 +217,7 @@
                 ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
                 : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
             >
-              Césped
+              {{ t('matchDetail.grass', 'Césped') }}
             </button>
           </div>
         </div>
@@ -229,7 +229,7 @@
             @click="emit('close')"
             class="btn-secondary text-sm"
           >
-            Cerrar
+            {{ t('matchDetail.close', 'Cerrar') }}
           </button>
           <button
             type="submit"
@@ -237,7 +237,7 @@
             class="btn-primary text-sm disabled:opacity-50"
           >
             <span v-if="saving" class="material-icons-round animate-spin text-sm mr-1">refresh</span>
-            <span>Guardar Cambios</span>
+            <span>{{ t('matchDetail.save', 'Guardar Cambios') }}</span>
           </button>
         </div>
       </form>
@@ -253,6 +253,7 @@ import { TournamentService, type Tournament } from '@/domains/tournaments/tourna
 import BottomSheet from '@/shared/components/BottomSheet.vue';
 import { useSnackbar } from '@/shared/composables/useSnackbar';
 import { useMatchStatsStore } from '../stores/matchStore';
+import { useI18n } from '@/shared/i18n';
 
 const props = withDefaults(defineProps<{
   isOpen: boolean;
@@ -267,6 +268,7 @@ const emit = defineEmits<{
   (e: 'updated', data: Partial<MatchPayload>): void;
 }>();
 
+const { t } = useI18n();
 const snackbar = useSnackbar();
 const { updateEnrichedMatch } = useMatchStatsStore();
 
@@ -306,8 +308,8 @@ onMounted(async () => {
 
 const selectedTournamentLocation = computed(() => {
   if (form.value.matchType !== 'tournament' || !form.value.tournamentId) return '';
-  const t = userTournaments.value.find(item => item.id === form.value.tournamentId);
-  return typeof t?.location === 'string' ? t.location : '';
+  const tItem = userTournaments.value.find(item => item.id === form.value.tournamentId);
+  return typeof tItem?.location === 'string' ? tItem.location : '';
 });
 
 const handleTournamentChanged = () => {
@@ -398,11 +400,15 @@ const handleSave = async () => {
     const updatedData: Partial<MatchPayload> = {
       rival: form.value.rival.trim(),
       matchType: form.value.matchType,
-      tournamentId: form.value.matchType === 'tournament' ? form.value.tournamentId : undefined,
-      location: finalLocation || undefined,
       surface: form.value.surface,
       enriched: true,
     };
+    if (finalLocation) {
+      updatedData.location = finalLocation;
+    }
+    if (form.value.matchType === 'tournament' && form.value.tournamentId) {
+      updatedData.tournamentId = form.value.tournamentId;
+    }
 
     try {
       await MatchStatsService.updateMatchEnrichment(props.match.id, {
@@ -418,11 +424,11 @@ const handleSave = async () => {
 
     updateEnrichedMatch(props.match.id, updatedData);
     emit('updated', updatedData);
-    snackbar.success('Partido actualizado con éxito');
+    snackbar.success(t('matchDetail.saveSuccess', 'Partido actualizado con éxito'));
     emit('close');
   } catch (e) {
     console.error('Failed to update match:', e);
-    snackbar.error('Error al actualizar el partido');
+    snackbar.error(t('matchDetail.error', 'Error al actualizar el partido'));
   } finally {
     saving.value = false;
   }

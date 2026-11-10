@@ -15,11 +15,11 @@
           </button>
           <div>
             <h2 class="text-xl sm:text-2xl font-display font-bold text-on-surface flex items-center gap-2">
-              <span>Configuración</span>
+              <span>{{ t('settings.title', 'Configuración') }}</span>
               <span class="sr-only">Ajustes & Servicios</span>
             </h2>
             <p class="text-xs sm:text-sm text-on-surface-variant">
-              Personaliza tu experiencia de análisis, tema y sincronización con sensores.
+              {{ t('settings.subtitle', 'Personaliza tu experiencia de análisis, tema y sincronización con sensores.') }}
             </p>
           </div>
         </div>
@@ -39,15 +39,15 @@
               <span class="material-icons-round text-primary text-xl">
                 {{ isDark ? 'dark_mode' : 'light_mode' }}
               </span>
-              <h3 class="font-bold text-base text-on-surface">Apariencia del Tema</h3>
+              <h3 class="font-bold text-base text-on-surface">{{ t('settings.appearance', 'Apariencia del Tema') }}</h3>
             </div>
             <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary-container text-on-primary-container">
-              {{ isDark ? 'Modo Oscuro' : 'Modo Claro' }}
+              {{ isDark ? t('settings.darkMode', 'Modo Oscuro') : t('settings.lightMode', 'Modo Claro') }}
             </span>
           </div>
 
           <p class="text-xs text-on-surface-variant">
-            Selecciona la paleta visual optimizada según el entorno o las condiciones de luz en cancha.
+            {{ t('settings.appearanceDesc', 'Selecciona la paleta visual optimizada según el entorno o las condiciones de luz en cancha.') }}
           </p>
 
           <div class="grid grid-cols-2 gap-3 pt-1">
@@ -60,7 +60,7 @@
                 : 'bg-surface text-on-surface border-outline hover:bg-surface-variant'"
             >
               <span class="material-icons-round text-lg">light_mode</span>
-              <span>Modo Claro</span>
+              <span>{{ t('settings.lightMode', 'Modo Claro') }}</span>
             </button>
 
             <button
@@ -72,7 +72,7 @@
                 : 'bg-surface text-on-surface border-outline hover:bg-surface-variant'"
             >
               <span class="material-icons-round text-lg">dark_mode</span>
-              <span>Modo Oscuro</span>
+              <span>{{ t('settings.darkMode', 'Modo Oscuro') }}</span>
             </button>
           </div>
         </div>
@@ -82,7 +82,7 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <span class="material-icons-round text-primary text-xl">language</span>
-              <h3 class="font-bold text-base text-on-surface">Idioma / Language</h3>
+              <h3 class="font-bold text-base text-on-surface">{{ t('settings.language', 'Idioma / Language') }}</h3>
             </div>
             <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container uppercase">
               {{ locale }}
@@ -90,7 +90,7 @@
           </div>
 
           <p class="text-xs text-on-surface-variant">
-            Cambia instantáneamente el idioma de visualización de la interfaz.
+            {{ t('settings.languageDesc', 'Cambia instantáneamente el idioma de visualización de la interfaz.') }}
           </p>
 
           <div class="grid grid-cols-2 gap-3 pt-1">
@@ -103,7 +103,7 @@
                 : 'bg-surface text-on-surface border-outline hover:bg-surface-variant'"
             >
               <span class="text-base">🇪🇸</span>
-              <span>Español</span>
+              <span>{{ t('settings.spanish', 'Español') }}</span>
             </button>
 
             <button
@@ -115,7 +115,7 @@
                 : 'bg-surface text-on-surface border-outline hover:bg-surface-variant'"
             >
               <span class="text-base">🇬🇧</span>
-              <span>English</span>
+              <span>{{ t('settings.english', 'English') }}</span>
             </button>
           </div>
         </div>
@@ -125,16 +125,16 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <span class="material-icons-round text-primary text-xl">favorite</span>
-              <h3 class="font-bold text-base text-on-surface">Health Connect & Wear OS</h3>
+              <h3 class="font-bold text-base text-on-surface">{{ t('settings.healthConnectTitle', 'Health Connect & Wear OS') }}</h3>
             </div>
             <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 flex items-center gap-1">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Conectado</span>
+              <span>{{ t('settings.statusConnected', 'Conectado') }}<span class="sr-only">Conectado</span></span>
             </span>
           </div>
 
           <p class="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
-            Sincronización activa de frecuencia cardíaca continua, consumo calórico y conteo de pasos durante cada partido registrado desde tu smartwatch Wear OS con la app oficial Tennis Stats.
+            {{ t('settings.healthConnectDesc', 'Sincronización activa de frecuencia cardíaca continua, consumo calórico y conteo de pasos durante cada partido registrado desde tu smartwatch Wear OS con la app oficial Tennis Stats.') }}
           </p>
 
           <div class="pt-2">
@@ -144,7 +144,7 @@
               class="btn-primary w-full text-xs sm:text-sm gap-2"
             >
               <span class="material-icons-round text-base">tune</span>
-              <span>Abrir Ajustes Nativos</span>
+              <span>{{ t('settings.openNativeSettings', 'Abrir Ajustes Nativos') }}</span>
             </button>
           </div>
         </div>
@@ -153,9 +153,9 @@
         <div class="glass-panel bg-surface text-on-surface p-4 sm:p-5 rounded-2xl border border-outline flex items-center justify-between text-xs shadow-sm">
           <div class="flex items-center gap-2 text-on-surface-variant">
             <span class="material-icons-round text-base">info</span>
-            <span>Versión del Dashboard</span>
+            <span>{{ t('settings.versionTitle', 'Versión del Dashboard') }}</span>
           </div>
-          <span class="font-bold text-on-surface">v1.4.0 (Material 3 Wimbledon Emerald)</span>
+          <span class="font-bold text-on-surface">{{ t('settings.versionBadge', 'v1.4.0 (Material Design 3)') }}</span>
         </div>
 
       </div>
@@ -171,7 +171,7 @@ import { useI18n, type Locale } from '@/shared/i18n';
 import { useSnackbar } from '@/shared/composables/useSnackbar';
 
 const router = useRouter();
-const { locale, setLocale } = useI18n();
+const { locale, setLocale, t } = useI18n();
 const snackbar = useSnackbar();
 
 const handleGoBack = () => {
@@ -192,7 +192,7 @@ const setThemeMode = (mode: ThemeMode) => {
 
 const handleSetLocale = (newLocale: Locale) => {
   setLocale(newLocale);
-  snackbar.info(newLocale === 'es' ? 'Idioma cambiado a Español' : 'Language changed to English');
+  snackbar.info(newLocale === 'es' ? t('settings.langChangedEs', 'Idioma cambiado a Español') : t('settings.langChangedEn', 'Language changed to English'));
 };
 
 const triggerNativeSettings = async () => {
@@ -204,6 +204,6 @@ const triggerNativeSettings = async () => {
       console.warn('Native openNativeSettings failed:', e);
     }
   }
-  snackbar.info('Ajustes nativos disponibles en la app complementaria.');
+  snackbar.info(t('settings.nativeAvailable', 'Ajustes nativos disponibles en la app complementaria.'));
 };
 </script>

@@ -13,6 +13,15 @@ test.describe('Web Dashboard Masterclass Features', () => {
           surface: 'Clay',
           status: 'active',
           startDate: Date.now() - 604800000,
+        },
+        {
+          id: 'tourney_master_series',
+          userId: 'test_user',
+          name: 'Copa Master Series',
+          location: 'Buenos Aires',
+          surface: 'Hard',
+          status: 'upcoming',
+          startDate: Date.now() + 86400000,
         }
       ];
 
@@ -225,5 +234,86 @@ test.describe('Web Dashboard Masterclass Features', () => {
     // Verify tournament matches are displayed
     await expect(page.getByRole('heading', { name: /Partidos Oficiales Jugados/i })).toBeVisible();
     await expect(page.locator('body')).toContainText('vs Novak Djokovic');
+  });
+
+  test('should update global stats, KPIs, and active filter tags when filtering', async ({ page }) => {
+    await page.goto('/');
+
+    // Initially 2 matches recorded
+    const overviewCard = page.locator('.glass-panel').first();
+    await expect(overviewCard).toContainText('2');
+
+    // Filter by "Victorias"
+    await page.getByRole('button', { name: /Victorias/i }).click();
+
+    // Verify Active Filter Tag is displayed
+    const filterTag = page.getByText(/Resultado: Victorias/i);
+    await expect(filterTag).toBeVisible();
+
+    // Overview KPIs should now recompute to 1 match
+    await expect(overviewCard).toContainText('1');
+
+    // Table should only show Novak Djokovic
+    await expect(page.locator('table')).toContainText('Novak Djokovic');
+    await expect(page.locator('table')).not.toContainText('Rafael Nadal');
+
+    // Remove the filter tag using the ✕ button
+    const removeTagBtn = page.getByRole('button', { name: /Quitar filtro/i });
+    await expect(removeTagBtn).toBeVisible();
+    await removeTagBtn.click();
+
+    // Overview KPIs should return to 2 matches
+    await expect(overviewCard).toContainText('2');
+    await expect(page.locator('table')).toContainText('Rafael Nadal');
+  });
+
+  test('should open FilterSheet, apply multi-criteria filters, and clear all', async ({ page }) => {
+    await page.goto('/');
+
+    // Open advanced filter sheet
+    const filtersBtn = page.getByRole('button', { name: /Filtros/i }).first();
+    await expect(filtersBtn).toBeVisible();
+    await filtersBtn.click();
+
+    // Verify FilterSheet opens
+    await expect(page.getByRole('heading', { name: /Filtros de Partidos/i })).toBeVisible();
+
+    // Select surface "Polvo de ladrillo"
+    const clayChip = page.getByRole('button', { name: /Polvo de ladrillo/i }).first();
+    await clayChip.click();
+
+    // Apply filters
+    const applyBtn = page.getByRole('button', { name: /Aplicar Filtros/i });
+    await expect(applyBtn).toBeVisible();
+    await applyBtn.click();
+
+    // Verify FilterSheet closed
+    await expect(page.getByRole('heading', { name: /Filtros de Partidos/i })).not.toBeVisible();
+
+    // Verify surface tag is rendered
+    await expect(page.getByText(/Superficie: Polvo de ladrillo/i)).toBeVisible();
+
+    // Clear all filters via "Limpiar filtros"
+    const clearAllBtn = page.getByRole('button', { name: /Limpiar filtros/i });
+    await expect(clearAllBtn).toBeVisible();
+    await clearAllBtn.click();
+
+    // Verify tag is dismissed
+    await expect(page.getByText(/Superficie: Polvo de ladrillo/i)).not.toBeVisible();
+  });
+
+  test('should switch active tournament in TournamentHubView using the M3 selector', async ({ page }) => {
+    await page.goto('/tournament');
+
+    // Verify initial active tournament
+    await expect(page.locator('body')).toContainText('Torneo Abierto Club Central');
+
+    // Switch to Copa Master Series using the M3 tournament chip
+    const masterSeriesChip = page.getByRole('button', { name: /Copa Master Series/i });
+    await expect(masterSeriesChip).toBeVisible();
+    await masterSeriesChip.click();
+
+    // Verify active tournament switched
+    await expect(page.locator('body')).toContainText('Copa Master Series');
   });
 });

@@ -1,6 +1,6 @@
 import type { MatchPayload } from '../../_shared/types';
 import type { OverviewStats, MatchRow, PhysiologicalData, PointBreakdownData } from '../types';
-import { collection, query, where, orderBy, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db, auth, getCurrentUser } from '@/shared/services/firebase';
 
 export class MatchStatsService {
@@ -18,30 +18,18 @@ export class MatchStatsService {
         }
 
         const matchesRef = collection(db, 'matches');
-        let docs: any[] = [];
-        try {
-            const q = query(
-                matchesRef,
-                where('userId', '==', targetUserId),
-                orderBy('idt', 'desc')
-            );
-            const snapshot = await getDocs(q);
-            docs = snapshot.docs;
-        } catch (queryErr) {
-            console.warn('[MatchStatsService] Indexed query failed, querying without orderBy and sorting locally:', queryErr);
-            const fallbackQ = query(
-                matchesRef,
-                where('userId', '==', targetUserId)
-            );
-            const snapshot = await getDocs(fallbackQ);
-            docs = snapshot.docs;
-        }
+        const q = query(
+            matchesRef,
+            where('userId', '==', targetUserId)
+        );
+        const snapshot = await getDocs(q);
+        const docs = snapshot.docs;
 
         const items = docs.map(doc => {
             const data = doc.data() as MatchPayload;
             return {
-                id: doc.id,
-                ...data
+                ...data,
+                id: doc.id
             };
         });
         return items.sort((a, b) => (b.idt || 0) - (a.idt || 0));
@@ -62,11 +50,21 @@ export class MatchStatsService {
     ): Promise<void> {
         if (!matchId) throw new Error('matchId is required to update match enrichment');
         const matchRef = doc(db, 'matches', matchId);
-        await updateDoc(matchRef, {
-            ...data,
+
+        // Sanitize data: strip any fields that are undefined or null
+        // Cloud Firestore strictly throws on 'undefined' values
+        const cleanData: Record<string, any> = {
             enriched: true,
             updatedAt: Date.now()
-        });
+        };
+        for (const [key, val] of Object.entries(data)) {
+            if (val !== undefined && val !== null) {
+                cleanData[key] = val;
+            }
+        }
+
+        // Use setDoc with merge: true to guarantee merge semantics and offline persistence
+        await setDoc(matchRef, cleanData, { merge: true });
     }
 
     /**

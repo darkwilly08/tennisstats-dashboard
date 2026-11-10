@@ -1,8 +1,8 @@
 <template>
   <BottomSheet
     :isOpen="true"
-    title="Completar Detalles del Partido"
-    subtitle="Registrado desde tu reloj Wear OS"
+    :title="t('matchDetail.enrichTitle', 'Completar Detalles del Partido')"
+    :subtitle="t('matchDetail.enrichSubtitle', 'Registrado desde tu reloj Wear OS')"
     icon="edit_note"
     @close="$emit('close')"
   >
@@ -11,7 +11,7 @@
       <!-- Clasificación: Torneo Oficial vs Partido Amistoso -->
       <div>
         <label class="m3-label">
-          Clasificación del Partido *
+          {{ t('matchDetail.classification', 'Clasificación del Partido') }} *
         </label>
         <div class="grid grid-cols-2 gap-3">
           <button
@@ -23,7 +23,7 @@
               : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
           >
             <span class="material-icons-round text-base">handshake</span>
-            <span>Partido Amistoso</span>
+            <span>{{ t('matchDetail.friendly', 'Partido Amistoso') }}</span>
           </button>
           <button
             type="button"
@@ -34,7 +34,7 @@
               : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
           >
             <span class="material-icons-round text-base">emoji_events</span>
-            <span>Torneo Oficial</span>
+            <span>{{ t('matchDetail.official', 'Torneo Oficial') }}</span>
           </button>
         </div>
       </div>
@@ -43,7 +43,7 @@
       <div v-if="form.matchType === 'tournament'" class="space-y-2 p-4 rounded-xl bg-surface-variant border border-outline-variant">
         <div class="flex items-center justify-between">
           <label class="m3-label mb-0">
-            Torneo Asociado *
+            {{ t('matchDetail.tournament', 'Torneo Asociado') }} *
           </label>
           <button 
             type="button"
@@ -51,7 +51,7 @@
             class="text-xs text-primary hover:underline font-semibold flex items-center gap-1"
           >
             <span class="material-icons-round text-sm" v-if="!showInlineCreateTournament">add</span>
-            <span>{{ showInlineCreateTournament ? 'Volver al listado' : 'Nuevo Torneo' }}</span>
+            <span>{{ showInlineCreateTournament ? t('matchDetail.backToList', 'Volver al listado') : t('matchDetail.newTournament', 'Nuevo Torneo') }}</span>
           </button>
         </div>
 
@@ -61,13 +61,13 @@
             @change="handleTournamentSelected"
             class="m3-input"
           >
-            <option value="">Selecciona un torneo...</option>
-            <option v-for="t in userTournaments" :key="t.id" :value="t.id">
-              {{ t.name }} ({{ t.location }})
+            <option value="">{{ t('matchDetail.selectTournament', 'Selecciona un torneo...') }}</option>
+            <option v-for="tItem in userTournaments" :key="tItem.id" :value="tItem.id">
+              {{ tItem.name }} ({{ tItem.location }})
             </option>
           </select>
           <p v-if="userTournaments.length === 0" class="text-xs text-on-surface-variant mt-1.5">
-            No tienes torneos registrados. Haz clic en "Nuevo Torneo" arriba para crear uno.
+            {{ t('matchDetail.noTournamentsPrompt', 'No tienes torneos registrados. Haz clic en "Nuevo Torneo" arriba para crear uno.') }}
           </p>
         </div>
 
@@ -75,13 +75,13 @@
           <input 
             v-model="inlineTournamentName"
             type="text" 
-            placeholder="Nombre del nuevo torneo..."
+            :placeholder="t('matchDetail.newTournamentNamePlaceholder', 'Nombre del nuevo torneo...')"
             class="m3-input"
           />
           <input 
             v-model="inlineTournamentLocation"
             type="text" 
-            placeholder="Club / Lugar del torneo..."
+            :placeholder="t('matchDetail.newTournamentLocationPlaceholder', 'Club / Lugar del torneo...')"
             class="m3-input"
           />
           <button 
@@ -90,7 +90,7 @@
             :disabled="!inlineTournamentName || !inlineTournamentLocation"
             class="btn-primary w-full text-xs disabled:opacity-50 min-h-[40px]"
           >
-            Guardar Torneo y Asociar
+            {{ t('matchDetail.saveAndAssociate', 'Guardar Torneo y Asociar') }}
           </button>
         </div>
       </div>
@@ -98,19 +98,19 @@
       <!-- Rival Input with Autocomplete Suggestions -->
       <div>
         <label class="m3-label">
-          Nombre del Rival *
+          {{ t('matchDetail.rival', 'Nombre del Rival') }} *
         </label>
         <input 
           v-model="form.rival"
           type="text" 
           required
-          placeholder="Ej: Carlos Alcaraz, Marian, J. Rodriguez"
+          :placeholder="t('matchDetail.rivalPlaceholder', 'Ej: Carlos Alcaraz, Marian, J. Rodriguez')"
           class="m3-input"
         />
 
         <!-- Autocomplete Suggestions -->
         <div v-if="rivalSuggestions.length > 0" class="flex flex-wrap items-center gap-1.5 mt-2">
-          <span class="text-[11px] text-on-surface-variant">Sugerencias:</span>
+          <span class="text-[11px] text-on-surface-variant">{{ t('matchDetail.suggestions', 'Sugerencias:') }}</span>
           <button
             v-for="sug in rivalSuggestions"
             :key="sug"
@@ -127,7 +127,7 @@
       <div v-if="form.matchType !== 'tournament' || !selectedTournamentLocation">
         <div class="flex items-center justify-between mb-1.5">
           <label class="m3-label mb-0">
-            Lugar / Club
+            {{ t('matchDetail.location', 'Lugar / Club') }}
           </label>
           <button 
             type="button"
@@ -136,13 +136,13 @@
             class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
           >
             <span class="material-icons-round text-xs" :class="{ 'animate-spin': locating }">my_location</span>
-            <span>📍 Usar ubicación actual</span>
+            <span>{{ t('matchDetail.useLocation', '📍 Usar ubicación actual') }}</span>
           </button>
         </div>
         <input 
           v-model="form.location"
           type="text" 
-          placeholder="Ej: Buenos Aires Lawn Tennis Club"
+          :placeholder="t('matchDetail.locationPlaceholder', 'Ej: Buenos Aires Lawn Tennis Club')"
           class="m3-input"
         />
       </div>
@@ -150,7 +150,7 @@
       <!-- Superficie -->
       <div>
         <label class="m3-label">
-          Superficie
+          {{ t('matchDetail.surface', 'Superficie') }}
         </label>
         <div class="grid grid-cols-3 gap-2">
           <button
@@ -161,7 +161,7 @@
               ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
               : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
           >
-            Polvo de ladrillo
+            {{ t('matchDetail.clay', 'Polvo de ladrillo') }}
           </button>
           <button
             type="button"
@@ -171,7 +171,7 @@
               ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
               : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
           >
-            Cemento / Rápida
+            {{ t('matchDetail.hard', 'Cemento / Rápida') }}
           </button>
           <button
             type="button"
@@ -181,7 +181,7 @@
               ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
               : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
           >
-            Césped
+            {{ t('matchDetail.grass', 'Césped') }}
           </button>
         </div>
       </div>
@@ -193,7 +193,7 @@
           @click="$emit('close')"
           class="btn-secondary text-sm"
         >
-          Cancelar
+          {{ t('matchDetail.cancel', 'Cancelar') }}
         </button>
         <button 
           type="submit"
@@ -201,7 +201,7 @@
           class="btn-primary text-sm disabled:opacity-50"
         >
           <span v-if="saving" class="material-icons-round animate-spin text-sm mr-1">refresh</span>
-          <span>Guardar Detalles</span>
+          <span>{{ t('matchDetail.saveDetails', 'Guardar Detalles') }}</span>
         </button>
       </div>
 
@@ -217,6 +217,7 @@ import { TournamentService, type Tournament } from '@/domains/tournaments/tourna
 import { getActiveSessionUser } from '@/shared/services/firebase';
 import BottomSheet from '@/shared/components/BottomSheet.vue';
 import { useSnackbar } from '@/shared/composables/useSnackbar';
+import { useI18n } from '@/shared/i18n';
 
 const props = defineProps<{
   match: MatchPayload;
@@ -228,6 +229,7 @@ const emit = defineEmits<{
   (e: 'enriched', data: Partial<MatchPayload>): void;
 }>();
 
+const { t } = useI18n();
 const snackbar = useSnackbar();
 const saving = ref(false);
 const locating = ref(false);
@@ -246,8 +248,8 @@ const form = ref({
 
 const selectedTournamentLocation = computed(() => {
   if (form.value.matchType !== 'tournament' || !form.value.tournamentId) return '';
-  const t = userTournaments.value.find(item => item.id === form.value.tournamentId);
-  return typeof t?.location === 'string' ? t.location : '';
+  const tItem = userTournaments.value.find(item => item.id === form.value.tournamentId);
+  return typeof tItem?.location === 'string' ? tItem.location : '';
 });
 
 const handleTournamentSelected = () => {
@@ -365,11 +367,15 @@ const handleSubmit = async () => {
     const updatedData: Partial<MatchPayload> = {
       rival: form.value.rival.trim(),
       matchType: form.value.matchType,
-      tournamentId: form.value.matchType === 'tournament' ? form.value.tournamentId : undefined,
-      location: finalLocation || undefined,
       surface: form.value.surface,
       enriched: true
     };
+    if (finalLocation) {
+      updatedData.location = finalLocation;
+    }
+    if (form.value.matchType === 'tournament' && form.value.tournamentId) {
+      updatedData.tournamentId = form.value.tournamentId;
+    }
 
     if (props.match.id) {
       try {
@@ -386,7 +392,7 @@ const handleSubmit = async () => {
     }
 
     emit('enriched', updatedData);
-    snackbar.success('Detalles del partido guardados con éxito');
+    snackbar.success(t('matchDetail.enrichSuccess', 'Detalles del partido guardados con éxito'));
     emit('close');
   } catch (e) {
     console.error('Failed to save match enrichment:', e);
