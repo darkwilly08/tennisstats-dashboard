@@ -27,6 +27,11 @@ const router = createRouter({
             path: '/scouting',
             name: 'scouting',
             component: () => import('../pages/Scouting.vue')
+        },
+        {
+            path: '/settings',
+            name: 'settings',
+            component: () => import('../pages/SettingsView.vue')
         }
     ]
 });

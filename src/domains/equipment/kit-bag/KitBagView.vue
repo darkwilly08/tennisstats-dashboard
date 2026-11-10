@@ -9,25 +9,11 @@
           <p class="text-xs sm:text-sm text-on-surface-variant">Control de raquetas, cuerdas, tensión y desgaste de calzado.</p>
         </div>
         <button 
-          @click="showAddGearNotice = true"
+          @click="showAddGearModal = true"
           class="bg-primary text-on-primary hover:opacity-90 transition-all font-medium px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center min-h-[44px] text-sm"
         >
           <span class="material-icons-round text-lg mr-2">add</span>
           <span>Agregar Equipo</span>
-        </button>
-      </div>
-
-      <!-- Notice when user clicks Add Gear -->
-      <div v-if="showAddGearNotice" class="glass-panel bg-surface text-on-surface p-4 rounded-xl border-l-4 border-l-primary flex items-start justify-between gap-4">
-        <div class="flex items-start gap-3">
-          <span class="material-icons-round text-primary text-2xl">info</span>
-          <div class="text-xs sm:text-sm text-on-surface-variant">
-            <strong class="font-bold text-on-surface">Sincronización de Equipo:</strong>
-            El asistente para calibrar nuevas raquetas y sobregrips estará habilitado en el próximo update. Podrás seleccionar tu raqueta directamente desde la app en tu reloj antes de comenzar a jugar.
-          </div>
-        </div>
-        <button @click="showAddGearNotice = false" class="text-on-surface-variant hover:text-on-surface">
-          <span class="material-icons-round text-lg">close</span>
         </button>
       </div>
 
@@ -60,7 +46,7 @@
           </div>
         </div>
         
-        <!-- Sidebar: Footwear & Maintenance Log (Coming Soon) -->
+        <!-- Sidebar: Footwear & Maintenance Log -->
         <div class="space-y-8">
           <FootwearSection :shoes="shoes" />
           <MaintenanceLog :logs="logs" />
@@ -71,6 +57,12 @@
     <div v-else class="max-w-7xl mx-auto px-6 py-16 flex justify-center text-on-surface-variant">
       <span class="material-icons-round animate-spin text-4xl text-primary">refresh</span>
     </div>
+
+    <!-- Add Gear Bottom Sheet Modal -->
+    <AddGearModal
+      :isOpen="showAddGearModal"
+      @close="showAddGearModal = false"
+    />
   </div>
 </template>
 
@@ -80,7 +72,8 @@ import { useKitBag } from './composables/useKitBag';
 import RacquetCard from './components/RacquetCard.vue';
 import FootwearSection from './components/FootwearSection.vue';
 import MaintenanceLog from './components/MaintenanceLog.vue';
+import AddGearModal from './components/AddGearModal.vue';
 
 const { racquets, shoes, logs, loading } = useKitBag();
-const showAddGearNotice = ref(false);
+const showAddGearModal = ref(false);
 </script>

@@ -6,7 +6,7 @@
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm text-left">
-        <thead class="text-xs text-on-surface-variant uppercase bg-surface-variant/70 border-b border-outline-variant">
+        <thead class="text-xs text-on-surface-variant uppercase bg-surface-variant border-b border-outline-variant">
           <tr>
             <th class="px-6 py-3 font-semibold" scope="col">Result</th>
             <th class="px-6 py-3 font-semibold" scope="col">Score</th>
@@ -19,7 +19,12 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant">
-          <tr v-for="match in matches" :key="match.id" class="bg-surface hover:bg-surface-variant/50 transition-colors">
+          <tr 
+            v-for="match in matches" 
+            :key="match.id" 
+            @click="emit('select', match.id)"
+            class="bg-surface hover:bg-surface-variant/80 cursor-pointer transition-colors group"
+          >
             <td class="px-6 py-4">
               <div v-if="match.won" class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-sm">
                 <span class="material-icons-round text-sm">thumb_up</span>
@@ -37,13 +42,20 @@
               </span>
             </td>
             <td class="px-6 py-4 text-on-surface-variant">{{ match.date }}</td>
-            <td class="px-6 py-4 font-semibold text-on-surface">{{ match.rival }}</td>
+            <td class="px-6 py-4 font-semibold text-on-surface group-hover:text-primary transition-colors">
+              {{ match.rival }}
+            </td>
             <td class="px-6 py-4 text-on-surface">{{ match.durationString }}</td>
             <td class="px-6 py-4 text-center text-on-surface">{{ match.meBreaks }}/{{ match.himBreaks }}</td>
             <td class="px-6 py-4 text-center text-on-surface">{{ match.mePointsWon }}|{{ match.himPointsWon }}</td>
             <td class="px-6 py-4 text-right">
-              <button class="text-on-surface-variant hover:text-primary transition-colors p-1">
-                <span class="material-icons-round text-base">visibility</span>
+              <button 
+                type="button" 
+                @click.stop="emit('select', match.id)"
+                class="text-on-surface-variant group-hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-surface-variant"
+                aria-label="Ver detalles"
+              >
+                <span class="material-icons-round text-base">edit_note</span>
               </button>
             </td>
           </tr>
@@ -63,5 +75,9 @@ import type { MatchRow } from '../types';
 
 defineProps<{
   matches: MatchRow[]
+}>();
+
+const emit = defineEmits<{
+  (e: 'select', matchId: string): void;
 }>();
 </script>

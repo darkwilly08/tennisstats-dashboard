@@ -30,13 +30,14 @@
           </div>
         </div>
 
-        <!-- Right: Clean Settings Quick Action -->
+        <!-- Right: Clean Settings Direct Route (No intermediate modal) -->
         <div class="flex items-center gap-2 shrink-0">
-          <button 
-            @click="showSettingsModal = true"
-            aria-label="Ajustes & Servicios"
+          <button
+            type="button"
+            @click="handleNavigateToSettings"
+            aria-label="Configuración (Ajustes & Servicios)"
+            title="Configuración"
             class="p-2 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
-            title="Ajustes & Servicios"
           >
             <span class="material-icons-round text-xl">settings</span>
           </button>
@@ -45,10 +46,13 @@
       </div>
     </header>
 
-    <!-- Main View Slot -->
+    <!-- Main View Slot with Smooth Transition -->
     <div class="flex-1">
       <slot />
     </div>
+
+    <!-- Global M3 Snackbar / Toast Notifications -->
+    <SnackbarContainer />
 
     <!-- Slide-Out Drawer Backdrop -->
     <div 
@@ -154,16 +158,22 @@
           <span>Rivales & Scouting</span>
         </router-link>
 
-        <button 
-          @click="handleOpenSettings"
-          class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-on-surface hover:bg-surface-variant transition-all min-h-[48px] text-left"
+        <router-link 
+          to="/settings"
+          @click="isDrawerOpen = false"
+          role="button"
+          aria-label="Configuración & Health Connect"
+          class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px]"
+          :class="isRouteActive(['/settings']) 
+            ? 'bg-primary-container text-on-primary-container font-bold shadow-sm' 
+            : 'text-on-surface hover:bg-surface-variant'"
         >
           <span class="material-icons-round text-xl">settings</span>
-          <span>Configuración & Health Connect</span>
-        </button>
+          <span>Configuración</span>
+        </router-link>
       </nav>
 
-      <!-- Bottom Drawer Footer: Logout Only (Theme Switcher Consolidated in Settings) -->
+      <!-- Bottom Drawer Footer: Logout Only -->
       <div class="p-4 border-t border-outline-variant">
         <button 
           @click="handleSignOut"
@@ -175,105 +185,20 @@
       </div>
     </aside>
 
-    <!-- Settings Modal (Ajustes & Servicios - Exclusive Home for Theme Switcher) -->
-    <div v-if="showSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm" @click="showSettingsModal = false" />
-      
-      <div class="relative bg-surface text-on-surface rounded-2xl shadow-2xl border border-outline w-full max-w-md p-6 space-y-5 z-10">
-        <div class="flex items-center justify-between border-b border-outline-variant pb-3">
-          <div class="flex items-center gap-2">
-            <span class="material-icons-round text-primary text-2xl">settings</span>
-            <h3 class="text-lg font-bold text-on-surface">Ajustes & Servicios</h3>
-          </div>
-          <button 
-            @click="showSettingsModal = false" 
-            aria-label="Cerrar ajustes"
-            class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-          >
-            <span class="material-icons-round">close</span>
-          </button>
-        </div>
-
-        <div class="space-y-4">
-          <!-- Theme Configuration (Consolidated in Settings Only) -->
-          <div class="p-4 rounded-xl bg-surface-variant/60 border border-outline-variant space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 font-bold text-sm text-on-surface">
-                <span class="material-icons-round text-primary text-lg">{{ isDark ? 'dark_mode' : 'light_mode' }}</span>
-                <span>Apariencia del Tema</span>
-              </div>
-              <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary-container text-on-primary-container">
-                {{ isDark ? 'Oscuro' : 'Claro' }}
-              </span>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                @click="setThemeMode('light')"
-                class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border transition-all min-h-[44px]"
-                :class="!isDark 
-                  ? 'bg-primary text-on-primary border-primary shadow-sm' 
-                  : 'bg-surface text-on-surface border-outline hover:bg-surface-variant'"
-              >
-                <span class="material-icons-round text-base">light_mode</span>
-                <span>Modo Claro</span>
-              </button>
-              <button
-                type="button"
-                @click="setThemeMode('dark')"
-                class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border transition-all min-h-[44px]"
-                :class="isDark 
-                  ? 'bg-primary text-on-primary border-primary shadow-sm' 
-                  : 'bg-surface text-on-surface border-outline hover:bg-surface-variant'"
-              >
-                <span class="material-icons-round text-base">dark_mode</span>
-                <span>Modo Oscuro</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Health Connect & Wear OS -->
-          <div class="p-4 rounded-xl bg-surface-variant/60 border border-outline-variant space-y-2">
-            <div class="flex items-center gap-2 font-bold text-sm text-on-surface">
-              <span class="material-icons-round text-primary">favorite</span>
-              <span>Health Connect & Wear OS</span>
-            </div>
-            <p class="text-xs text-on-surface-variant leading-relaxed">
-              Sincronización activa de frecuencia cardíaca, consumo calórico y pasos durante cada partido registrado con tu reloj inteligente.
-            </p>
-          </div>
-
-          <div class="p-4 rounded-xl bg-surface-variant/60 border border-outline-variant flex justify-between items-center text-xs">
-            <span class="text-on-surface-variant">Versión del Dashboard</span>
-            <span class="font-bold text-on-surface">v1.3.0 (M3 Design System)</span>
-          </div>
-
-          <button 
-            @click="triggerNativeSettings"
-            class="w-full bg-primary text-on-primary hover:opacity-90 transition-all font-medium px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 min-h-[44px]"
-          >
-            <span class="material-icons-round text-base">tune</span>
-            <span>Abrir Ajustes Nativos</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '@/shared/composables/useAuth';
-import { applyTheme, toggleTheme, isDark, type ThemeMode } from '@/shared/services/theme';
+import SnackbarContainer from '@/shared/components/SnackbarContainer.vue';
 
 const route = useRoute();
+const router = useRouter();
 const { user, displayName, email, initials, logout } = useAuth();
 
 const isDrawerOpen = ref(false);
-const showSettingsModal = ref(false);
 
 const activePageTitle = computed(() => {
   const path = route.path;
@@ -289,6 +214,9 @@ const activePageTitle = computed(() => {
   if (path.startsWith('/scouting')) {
     return 'SCOUTING REPORT';
   }
+  if (path.startsWith('/settings')) {
+    return 'CONFIGURACIÓN';
+  }
   return 'TENNIS STATS';
 });
 
@@ -296,28 +224,8 @@ const isRouteActive = (paths: string[]) => {
   return paths.includes(route.path);
 };
 
-const setThemeMode = (mode: ThemeMode) => {
-  if ((mode === 'dark') !== isDark.value) {
-    toggleTheme();
-  } else {
-    applyTheme(mode);
-  }
-};
-
-const handleOpenSettings = () => {
-  isDrawerOpen.value = false;
-  showSettingsModal.value = true;
-};
-
-const triggerNativeSettings = async () => {
-  if (window.flutter_inappwebview?.callHandler) {
-    try {
-      await window.flutter_inappwebview.callHandler('openNativeSettings');
-    } catch (e) {
-      console.warn('Native openNativeSettings call failed:', e);
-    }
-  }
-  showSettingsModal.value = false;
+const handleNavigateToSettings = () => {
+  router.push('/settings');
 };
 
 const handleSignOut = async () => {

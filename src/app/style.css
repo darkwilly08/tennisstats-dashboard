@@ -48,6 +48,85 @@
     color: var(--md-sys-color-on-surface);
   }
 
+  /* Override @tailwindcss/forms hardcoded #fff on input elements */
+  input[type='text'],
+  input[type='email'],
+  input[type='url'],
+  input[type='password'],
+  input[type='number'],
+  input[type='date'],
+  input[type='datetime-local'],
+  input[type='month'],
+  input[type='search'],
+  input[type='tel'],
+  input[type='time'],
+  input[type='week'],
+  [multiple],
+  textarea,
+  select {
+    background-color: var(--md-sys-color-surface-variant);
+    color: var(--md-sys-color-on-surface);
+    border-color: var(--md-sys-color-outline);
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+
+  html.dark input[type='text'],
+  html.dark input[type='email'],
+  html.dark input[type='url'],
+  html.dark input[type='password'],
+  html.dark input[type='number'],
+  html.dark input[type='date'],
+  html.dark input[type='datetime-local'],
+  html.dark input[type='month'],
+  html.dark input[type='search'],
+  html.dark input[type='tel'],
+  html.dark input[type='time'],
+  html.dark input[type='week'],
+  html.dark [multiple],
+  html.dark textarea,
+  html.dark select {
+    background-color: #1E293B;
+    color: #F8FAFC;
+    border-color: #334155;
+  }
+
+  html:not(.dark) input[type='text'],
+  html:not(.dark) input[type='email'],
+  html:not(.dark) input[type='url'],
+  html:not(.dark) input[type='password'],
+  html:not(.dark) input[type='number'],
+  html:not(.dark) input[type='date'],
+  html:not(.dark) input[type='datetime-local'],
+  html:not(.dark) input[type='month'],
+  html:not(.dark) input[type='search'],
+  html:not(.dark) input[type='tel'],
+  html:not(.dark) input[type='time'],
+  html:not(.dark) input[type='week'],
+  html:not(.dark) [multiple],
+  html:not(.dark) textarea,
+  html:not(.dark) select {
+    background-color: #F8FAFC;
+    color: #0F172A;
+    border-color: #CBD5E1;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--md-sys-color-on-surface-variant);
+    opacity: 0.85;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--md-sys-color-primary) !important;
+    box-shadow: 0 0 0 2px var(--md-sys-color-primary-container) !important;
+  }
+
   /* Custom scrollbar for a cleaner look */
   ::-webkit-scrollbar {
     width: 8px;
@@ -88,6 +167,23 @@
   .btn-secondary {
     @apply bg-surface border border-outline text-on-surface hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-medium px-5 py-2.5 rounded-xl flex items-center justify-center min-h-[44px];
   }
+
+  /* M3 Form Components */
+  .m3-input {
+    @apply w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all;
+    background-color: var(--md-sys-color-surface-variant);
+    color: var(--md-sys-color-on-surface);
+    border-color: var(--md-sys-color-outline);
+  }
+  html.dark .m3-input {
+    background-color: #1E293B;
+    color: #F8FAFC;
+    border-color: #334155;
+  }
+  .m3-label {
+    @apply block text-xs font-semibold uppercase tracking-wider text-on-surface-variant dark:text-slate-300 mb-1.5;
+  }
+
   .chart-container {
     position: relative;
     height: 250px;
@@ -96,4 +192,18 @@
   .hr-gradient-bar {
     background: linear-gradient(90deg, #006C4C 0%, #10B981 40%, #F59E0B 70%, #EF4444 100%);
   }
+}
+
+/* Page Transition Animations */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }

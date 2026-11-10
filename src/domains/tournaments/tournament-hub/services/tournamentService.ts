@@ -1,12 +1,16 @@
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db, auth, getCurrentUser } from '@/shared/services/firebase';
 import type { Tournament, BracketMatch, TournamentPressureStats } from '../../_shared/types';
+import type { MatchPayload } from '@/domains/tennis-core/_shared/types';
 
 export class TournamentService {
   /**
    * Fetches all tournaments for a given user from Firestore.
    */
   static async getTournaments(userId?: string): Promise<Tournament[]> {
+    if (typeof window !== 'undefined' && (window as any).__test_tournaments) {
+      return (window as any).__test_tournaments;
+    }
     const targetUserId = userId || auth.currentUser?.uid || (await getCurrentUser())?.uid;
     if (!targetUserId) {
       console.warn('[TournamentService] No authenticated user found to fetch tournaments.');
@@ -59,6 +63,15 @@ export class TournamentService {
   }
 
   /**
+   * Deletes a tournament document from Firestore.
+   */
+  static async deleteTournament(id: string): Promise<void> {
+    if (!id) return;
+    const docRef = doc(db, 'tournaments', id);
+    await deleteDoc(docRef);
+  }
+
+  /**
    * Returns the current active tournament for the user, or the nearest upcoming, or null.
    */
   static async getActiveTournament(userId?: string): Promise<Tournament | null> {
@@ -81,6 +94,25 @@ export class TournamentService {
       }));
     } catch (e) {
       console.warn('[TournamentService] Error fetching bracket matches:', e);
+      return [];
+    }
+  }
+
+  /**
+   * Fetches matches from root matches collection associated with this tournament.
+   */
+  static async getMatchesForTournament(tournamentId: string): Promise<MatchPayload[]> {
+    if (!tournamentId) return [];
+    try {
+      const matchesRef = collection(db, 'matches');
+      const q = query(matchesRef, where('tournamentId', '==', tournamentId));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...(doc.data() as MatchPayload)
+      }));
+    } catch (e) {
+      console.warn('[TournamentService] Error fetching tournament matches:', e);
       return [];
     }
   }

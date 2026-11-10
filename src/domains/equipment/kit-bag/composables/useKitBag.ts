@@ -1,40 +1,13 @@
-import { ref, onMounted } from 'vue';
-import { KitBagService } from '../services/kitBagService';
-import type { Racquet, Shoe, MaintenanceLogEntry } from '../../_shared/types';
+import { useKitBagStore } from '../stores/kitBagStore';
 
 export function useKitBag() {
-    const racquets = ref<Racquet[]>([]);
-    const shoes = ref<Shoe[]>([]);
-    const logs = ref<MaintenanceLogEntry[]>([]);
-    const loading = ref(true);
+  const store = useKitBagStore();
 
-    const fetchData = async () => {
-        loading.value = true;
-        try {
-            const [r, s, l] = await Promise.all([
-                KitBagService.getRacquets(),
-                KitBagService.getShoes(),
-                KitBagService.getMaintenanceLogs()
-            ]);
-            racquets.value = r;
-            shoes.value = s;
-            logs.value = l;
-        } catch (e) {
-            console.error('Error fetching kit bag data:', e);
-        } finally {
-            loading.value = false;
-        }
-    };
-
-    onMounted(() => {
-        fetchData();
-    });
-
-    return {
-        racquets,
-        shoes,
-        logs,
-        loading,
-        refresh: fetchData
-    };
+  return {
+    racquets: store.racquets,
+    shoes: store.shoes,
+    logs: store.logs,
+    loading: store.loading,
+    refresh: store.refresh
+  };
 }

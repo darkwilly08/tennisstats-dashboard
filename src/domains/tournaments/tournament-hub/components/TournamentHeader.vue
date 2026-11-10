@@ -20,17 +20,32 @@
       </div>
       
       <div class="flex-1 min-w-0 flex flex-col justify-center">
-        <div class="flex items-center gap-3 mb-1">
-          <h2 class="text-2xl sm:text-3xl font-display font-bold text-on-surface truncate">{{ tournament.name }}</h2>
-          <span 
-            class="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider"
-            :class="{
-              'bg-primary-container text-on-primary-container': tournament.status === 'active',
-              'bg-secondary-container text-on-secondary-container': tournament.status !== 'active'
-            }"
-          >
-            {{ tournament.status === 'active' ? 'En Curso' : (tournament.status === 'upcoming' ? 'Próximo' : 'Finalizado') }}
-          </span>
+        <div class="flex items-center justify-between gap-3 mb-1">
+          <div class="flex items-center gap-3 min-w-0">
+            <h2 class="text-2xl sm:text-3xl font-display font-bold text-on-surface truncate">{{ tournament.name }}</h2>
+            <span 
+              class="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider shrink-0"
+              :class="{
+                'bg-primary-container text-on-primary-container': tournament.status === 'active',
+                'bg-secondary-container text-on-secondary-container': tournament.status !== 'active'
+              }"
+            >
+              {{ tournament.status === 'active' ? 'En Curso' : (tournament.status === 'upcoming' ? 'Próximo' : 'Finalizado') }}
+            </span>
+          </div>
+
+          <!-- Tournament Actions (Delete) -->
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              @click="showDeleteConfirm = true"
+              aria-label="Eliminar Torneo"
+              class="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center justify-center min-w-[40px] min-h-[40px]"
+              title="Eliminar Torneo"
+            >
+              <span class="material-icons-round text-xl">delete_outline</span>
+            </button>
+          </div>
         </div>
         
         <div class="flex flex-wrap gap-4 text-sm text-on-surface-variant mt-2">
@@ -48,16 +63,74 @@
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Sheet -->
+    <BottomSheet
+      :isOpen="showDeleteConfirm"
+      title="Eliminar Torneo"
+      subtitle="Confirmación de eliminación definitiva"
+      icon="warning"
+      @close="showDeleteConfirm = false"
+    >
+      <div class="space-y-4">
+        <p class="text-sm text-on-surface leading-relaxed">
+          ¿Estás seguro de que deseas eliminar <strong>{{ tournament.name }}</strong>? Esta acción desvinculará los partidos asignados a este torneo.
+        </p>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant">
+          <button
+            type="button"
+            @click="showDeleteConfirm = false"
+            class="btn-secondary text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            :disabled="deleting"
+            @click="handleConfirmDelete"
+            class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-medium text-sm transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 min-h-[44px]"
+          >
+            <span v-if="deleting" class="material-icons-round animate-spin text-sm">refresh</span>
+            <span>Eliminar Torneo</span>
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import type { Tournament } from '../types';
+import BottomSheet from '@/shared/components/BottomSheet.vue';
+import { useTournamentStore } from '../stores/tournamentStore';
+import { useSnackbar } from '@/shared/composables/useSnackbar';
 
 const props = defineProps<{
   tournament: Tournament
 }>();
+
+const { deleteTournament } = useTournamentStore();
+const snackbar = useSnackbar();
+
+const showDeleteConfirm = ref(false);
+const deleting = ref(false);
+
+const handleConfirmDelete = async () => {
+  if (!props.tournament.id) return;
+  deleting.value = true;
+  try {
+    await deleteTournament(props.tournament.id);
+    snackbar.success('Torneo eliminado correctamente');
+    showDeleteConfirm.value = false;
+  } catch (err) {
+    console.error('Failed to delete tournament:', err);
+    snackbar.error('Error al eliminar el torneo');
+  } finally {
+    deleting.value = false;
+  }
+};
 
 const locationText = computed(() => {
   if (!props.tournament.location) return '';

@@ -1,228 +1,212 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm" @click="$emit('close')" />
-
-    <div class="relative bg-surface text-on-surface rounded-2xl shadow-2xl border border-outline w-full max-w-lg p-6 space-y-5 z-10 max-h-[90vh] overflow-y-auto">
+  <BottomSheet
+    :isOpen="true"
+    title="Completar Detalles del Partido"
+    subtitle="Registrado desde tu reloj Wear OS"
+    icon="edit_note"
+    @close="$emit('close')"
+  >
+    <form @submit.prevent="handleSubmit" class="space-y-4">
       
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between border-b border-outline-variant pb-3">
-        <div class="flex items-center gap-2.5">
-          <span class="material-icons-round text-primary text-2xl">edit_note</span>
-          <div>
-            <h3 class="text-lg font-bold text-on-surface">Completar Detalles del Partido</h3>
-            <p class="text-xs text-on-surface-variant">Registrado desde tu reloj Wear OS</p>
-          </div>
+      <!-- Clasificación: Torneo Oficial vs Partido Amistoso -->
+      <div>
+        <label class="m3-label">
+          Clasificación del Partido *
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            @click="form.matchType = 'friendly'"
+            class="flex items-center justify-center gap-2 p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all min-h-[44px]"
+            :class="form.matchType === 'friendly' 
+              ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
+              : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
+          >
+            <span class="material-icons-round text-base">handshake</span>
+            <span>Partido Amistoso</span>
+          </button>
+          <button
+            type="button"
+            @click="form.matchType = 'tournament'"
+            class="flex items-center justify-center gap-2 p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all min-h-[44px]"
+            :class="form.matchType === 'tournament' 
+              ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
+              : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
+          >
+            <span class="material-icons-round text-base">emoji_events</span>
+            <span>Torneo Oficial</span>
+          </button>
         </div>
+      </div>
+
+      <!-- Torneo (Visible if Torneo Oficial is selected) -->
+      <div v-if="form.matchType === 'tournament'" class="space-y-2 p-4 rounded-xl bg-surface-variant border border-outline-variant">
+        <div class="flex items-center justify-between">
+          <label class="m3-label mb-0">
+            Torneo Asociado *
+          </label>
+          <button 
+            type="button"
+            @click="showInlineCreateTournament = !showInlineCreateTournament"
+            class="text-xs text-primary hover:underline font-semibold flex items-center gap-1"
+          >
+            <span class="material-icons-round text-sm" v-if="!showInlineCreateTournament">add</span>
+            <span>{{ showInlineCreateTournament ? 'Volver al listado' : 'Nuevo Torneo' }}</span>
+          </button>
+        </div>
+
+        <div v-if="!showInlineCreateTournament">
+          <select
+            v-model="form.tournamentId"
+            @change="handleTournamentSelected"
+            class="m3-input"
+          >
+            <option value="">Selecciona un torneo...</option>
+            <option v-for="t in userTournaments" :key="t.id" :value="t.id">
+              {{ t.name }} ({{ t.location }})
+            </option>
+          </select>
+          <p v-if="userTournaments.length === 0" class="text-xs text-on-surface-variant mt-1.5">
+            No tienes torneos registrados. Haz clic en "Nuevo Torneo" arriba para crear uno.
+          </p>
+        </div>
+
+        <div v-else class="space-y-2 pt-1">
+          <input 
+            v-model="inlineTournamentName"
+            type="text" 
+            placeholder="Nombre del nuevo torneo..."
+            class="m3-input"
+          />
+          <input 
+            v-model="inlineTournamentLocation"
+            type="text" 
+            placeholder="Club / Lugar del torneo..."
+            class="m3-input"
+          />
+          <button 
+            type="button"
+            @click="handleCreateInlineTournament"
+            :disabled="!inlineTournamentName || !inlineTournamentLocation"
+            class="btn-primary w-full text-xs disabled:opacity-50 min-h-[40px]"
+          >
+            Guardar Torneo y Asociar
+          </button>
+        </div>
+      </div>
+
+      <!-- Rival Input with Autocomplete Suggestions -->
+      <div>
+        <label class="m3-label">
+          Nombre del Rival *
+        </label>
+        <input 
+          v-model="form.rival"
+          type="text" 
+          required
+          placeholder="Ej: Carlos Alcaraz, Marian, J. Rodriguez"
+          class="m3-input"
+        />
+
+        <!-- Autocomplete Suggestions -->
+        <div v-if="rivalSuggestions.length > 0" class="flex flex-wrap items-center gap-1.5 mt-2">
+          <span class="text-[11px] text-on-surface-variant">Sugerencias:</span>
+          <button
+            v-for="sug in rivalSuggestions"
+            :key="sug"
+            type="button"
+            @click="form.rival = sug"
+            class="px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-container hover:opacity-90 text-xs font-semibold border border-outline transition-all"
+          >
+            {{ sug }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Lugar / Club with Geolocation (Hidden when Official Tournament is selected and tournament has location) -->
+      <div v-if="form.matchType !== 'tournament' || !selectedTournamentLocation">
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="m3-label mb-0">
+            Lugar / Club
+          </label>
+          <button 
+            type="button"
+            @click="requestLocation"
+            :disabled="locating"
+            class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
+          >
+            <span class="material-icons-round text-xs" :class="{ 'animate-spin': locating }">my_location</span>
+            <span>📍 Usar ubicación actual</span>
+          </button>
+        </div>
+        <input 
+          v-model="form.location"
+          type="text" 
+          placeholder="Ej: Buenos Aires Lawn Tennis Club"
+          class="m3-input"
+        />
+      </div>
+
+      <!-- Superficie -->
+      <div>
+        <label class="m3-label">
+          Superficie
+        </label>
+        <div class="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            @click="form.surface = 'Clay'"
+            class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center min-h-[44px]"
+            :class="form.surface === 'Clay' 
+              ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
+              : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
+          >
+            Polvo de ladrillo
+          </button>
+          <button
+            type="button"
+            @click="form.surface = 'Hard'"
+            class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center min-h-[44px]"
+            :class="form.surface === 'Hard' 
+              ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
+              : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
+          >
+            Cemento / Rápida
+          </button>
+          <button
+            type="button"
+            @click="form.surface = 'Grass'"
+            class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center min-h-[44px]"
+            :class="form.surface === 'Grass' 
+              ? 'border-primary bg-primary text-on-primary font-bold shadow-sm' 
+              : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
+          >
+            Césped
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit & Cancel Buttons -->
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant">
         <button 
+          type="button"
           @click="$emit('close')"
-          aria-label="Cerrar"
-          class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          class="btn-secondary text-sm"
         >
-          <span class="material-icons-round">close</span>
+          Cancelar
+        </button>
+        <button 
+          type="submit"
+          :disabled="saving || !form.rival.trim()"
+          class="btn-primary text-sm disabled:opacity-50"
+        >
+          <span v-if="saving" class="material-icons-round animate-spin text-sm mr-1">refresh</span>
+          <span>Guardar Detalles</span>
         </button>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="space-y-4">
-        
-        <!-- Clasificación: Torneo Oficial vs Partido Amistoso -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
-            Clasificación del Partido *
-          </label>
-          <div class="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              @click="form.matchType = 'friendly'"
-              class="flex items-center justify-center gap-2 p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all min-h-[44px]"
-              :class="form.matchType === 'friendly' 
-                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
-                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
-            >
-              <span class="material-icons-round text-base">handshake</span>
-              <span>Partido Amistoso</span>
-            </button>
-            <button
-              type="button"
-              @click="form.matchType = 'tournament'"
-              class="flex items-center justify-center gap-2 p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all min-h-[44px]"
-              :class="form.matchType === 'tournament' 
-                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
-                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
-            >
-              <span class="material-icons-round text-base">emoji_events</span>
-              <span>Torneo Oficial</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Torneo (Visible if Torneo Oficial is selected) -->
-        <div v-if="form.matchType === 'tournament'" class="space-y-2 p-4 rounded-xl bg-surface-variant/60 border border-outline-variant">
-          <div class="flex items-center justify-between">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface">
-              Torneo Asociado *
-            </label>
-            <button 
-              type="button"
-              @click="showInlineCreateTournament = !showInlineCreateTournament"
-              class="text-xs text-primary hover:underline font-semibold flex items-center gap-1"
-            >
-              <span class="material-icons-round text-sm" v-if="!showInlineCreateTournament">add</span>
-              <span>{{ showInlineCreateTournament ? 'Volver al listado' : 'Nuevo Torneo' }}</span>
-            </button>
-          </div>
-
-          <div v-if="!showInlineCreateTournament">
-            <select
-              v-model="form.tournamentId"
-              class="w-full px-3.5 py-2.5 rounded-lg border border-outline bg-surface text-on-surface text-sm focus:ring-2 focus:ring-primary outline-none"
-            >
-              <option value="">Selecciona un torneo...</option>
-              <option v-for="t in userTournaments" :key="t.id" :value="t.id">
-                {{ t.name }} ({{ t.location }})
-              </option>
-            </select>
-            <p v-if="userTournaments.length === 0" class="text-xs text-on-surface-variant mt-1.5">
-              No tienes torneos registrados. Haz clic en "Nuevo Torneo" arriba para crear uno.
-            </p>
-          </div>
-
-          <div v-else class="space-y-2 pt-1">
-            <input 
-              v-model="inlineTournamentName"
-              type="text" 
-              placeholder="Nombre del nuevo torneo..."
-              class="w-full px-3 py-2 rounded-lg border border-outline bg-surface text-on-surface text-xs sm:text-sm focus:ring-2 focus:ring-primary outline-none"
-            />
-            <input 
-              v-model="inlineTournamentLocation"
-              type="text" 
-              placeholder="Club / Lugar del torneo..."
-              class="w-full px-3 py-2 rounded-lg border border-outline bg-surface text-on-surface text-xs sm:text-sm focus:ring-2 focus:ring-primary outline-none"
-            />
-            <button 
-              type="button"
-              @click="handleCreateInlineTournament"
-              :disabled="!inlineTournamentName || !inlineTournamentLocation"
-              class="w-full bg-primary text-on-primary hover:opacity-90 transition-all font-medium px-4 py-2 rounded-xl shadow-sm flex items-center justify-center text-xs disabled:opacity-50 min-h-[40px]"
-            >
-              Guardar Torneo y Asociar
-            </button>
-          </div>
-        </div>
-
-        <!-- Rival Input with Autocomplete Suggestions -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">
-            Nombre del Rival *
-          </label>
-          <input 
-            v-model="form.rival"
-            type="text" 
-            required
-            placeholder="Ej: Carlos Alcaraz, Marian, J. Rodriguez"
-            class="w-full px-3.5 py-2.5 rounded-lg border border-outline bg-surface-variant/50 text-on-surface text-sm focus:ring-2 focus:ring-primary outline-none"
-          />
-
-          <!-- Autocomplete Suggestions -->
-          <div v-if="rivalSuggestions.length > 0" class="flex flex-wrap items-center gap-1.5 mt-2">
-            <span class="text-[11px] text-on-surface-variant">Sugerencias:</span>
-            <button
-              v-for="sug in rivalSuggestions"
-              :key="sug"
-              type="button"
-              @click="form.rival = sug"
-              class="px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-container hover:opacity-90 text-xs font-semibold border border-outline transition-all"
-            >
-              {{ sug }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Lugar / Club with Geolocation -->
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-              Lugar / Club
-            </label>
-            <button 
-              type="button"
-              @click="requestLocation"
-              :disabled="locating"
-              class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
-            >
-              <span class="material-icons-round text-xs" :class="{ 'animate-spin': locating }">my_location</span>
-              <span>📍 Usar ubicación actual</span>
-            </button>
-          </div>
-          <input 
-            v-model="form.location"
-            type="text" 
-            placeholder="Ej: Buenos Aires Lawn Tennis Club"
-            class="w-full px-3.5 py-2.5 rounded-lg border border-outline bg-surface-variant/50 text-on-surface text-sm focus:ring-2 focus:ring-primary outline-none"
-          />
-        </div>
-
-        <!-- Superficie -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">
-            Superficie
-          </label>
-          <div class="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              @click="form.surface = 'Clay'"
-              class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center min-h-[44px]"
-              :class="form.surface === 'Clay' 
-                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
-                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
-            >
-              Polvo de ladrillo
-            </button>
-            <button
-              type="button"
-              @click="form.surface = 'Hard'"
-              class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center min-h-[44px]"
-              :class="form.surface === 'Hard' 
-                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
-                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
-            >
-              Cemento / Rápida
-            </button>
-            <button
-              type="button"
-              @click="form.surface = 'Grass'"
-              class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center min-h-[44px]"
-              :class="form.surface === 'Grass' 
-                ? 'border-primary bg-primary-container text-on-primary-container font-bold shadow-sm' 
-                : 'border-outline bg-surface text-on-surface hover:bg-surface-variant'"
-            >
-              Césped
-            </button>
-          </div>
-        </div>
-
-        <!-- Submit & Cancel Buttons -->
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant">
-          <button 
-            type="button"
-            @click="$emit('close')"
-            class="bg-surface border border-outline text-on-surface hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-medium px-5 py-2.5 rounded-xl text-sm min-h-[44px]"
-          >
-            Cancelar
-          </button>
-          <button 
-            type="submit"
-            :disabled="saving || !form.rival.trim()"
-            class="bg-primary text-on-primary hover:opacity-90 transition-all font-medium px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm disabled:opacity-50 min-h-[44px]"
-          >
-            <span v-if="saving" class="material-icons-round animate-spin text-sm">refresh</span>
-            <span>Guardar Detalles</span>
-          </button>
-        </div>
-
-      </form>
-    </div>
-  </div>
+    </form>
+  </BottomSheet>
 </template>
 
 <script setup lang="ts">
@@ -231,6 +215,8 @@ import type { MatchPayload } from '../../_shared/types';
 import { MatchStatsService } from '../services/matchStatsService';
 import { TournamentService, type Tournament } from '@/domains/tournaments/tournament-hub';
 import { getActiveSessionUser } from '@/shared/services/firebase';
+import BottomSheet from '@/shared/components/BottomSheet.vue';
+import { useSnackbar } from '@/shared/composables/useSnackbar';
 
 const props = defineProps<{
   match: MatchPayload;
@@ -242,6 +228,7 @@ const emit = defineEmits<{
   (e: 'enriched', data: Partial<MatchPayload>): void;
 }>();
 
+const snackbar = useSnackbar();
 const saving = ref(false);
 const locating = ref(false);
 const userTournaments = ref<Tournament[]>([]);
@@ -257,9 +244,24 @@ const form = ref({
   surface: (props.match.surface || 'Clay') as 'Clay' | 'Hard' | 'Grass'
 });
 
+const selectedTournamentLocation = computed(() => {
+  if (form.value.matchType !== 'tournament' || !form.value.tournamentId) return '';
+  const t = userTournaments.value.find(item => item.id === form.value.tournamentId);
+  return typeof t?.location === 'string' ? t.location : '';
+});
+
+const handleTournamentSelected = () => {
+  if (selectedTournamentLocation.value) {
+    form.value.location = selectedTournamentLocation.value;
+  }
+};
+
 onMounted(async () => {
   try {
     userTournaments.value = await TournamentService.getTournaments();
+    if (form.value.tournamentId && selectedTournamentLocation.value) {
+      form.value.location = selectedTournamentLocation.value;
+    }
   } catch (err) {
     console.warn('Could not load tournaments:', err);
   }
@@ -285,9 +287,12 @@ const handleCreateInlineTournament = async () => {
     });
     userTournaments.value = await TournamentService.getTournaments();
     form.value.tournamentId = newId;
+    form.value.location = inlineTournamentLocation.value.trim();
     showInlineCreateTournament.value = false;
+    snackbar.success('Torneo creado y asociado');
   } catch (e) {
     console.error('Failed to create inline tournament:', e);
+    snackbar.error('Error al crear torneo');
   }
 };
 
@@ -335,14 +340,14 @@ const requestLocation = async () => {
           },
           (err) => {
             console.warn('Geolocation denied or failed:', err);
-            alert('No se pudo obtener la ubicación automáticamente. Ingrésala manualmente.');
+            snackbar.info('No se pudo obtener la ubicación automáticamente. Ingrésala manualmente.');
             resolve();
           },
           { timeout: 7000 }
         );
       });
     } else {
-      alert('La geolocalización no está disponible en este dispositivo.');
+      snackbar.info('La geolocalización no está disponible en este dispositivo.');
     }
   } finally {
     locating.value = false;
@@ -353,11 +358,15 @@ const handleSubmit = async () => {
   if (!form.value.rival.trim()) return;
   saving.value = true;
   try {
+    const finalLocation = form.value.matchType === 'tournament' && selectedTournamentLocation.value
+      ? selectedTournamentLocation.value
+      : form.value.location.trim();
+
     const updatedData: Partial<MatchPayload> = {
       rival: form.value.rival.trim(),
       matchType: form.value.matchType,
       tournamentId: form.value.matchType === 'tournament' ? form.value.tournamentId : undefined,
-      location: form.value.location.trim() || undefined,
+      location: finalLocation || undefined,
       surface: form.value.surface,
       enriched: true
     };
@@ -377,10 +386,11 @@ const handleSubmit = async () => {
     }
 
     emit('enriched', updatedData);
+    snackbar.success('Detalles del partido guardados con éxito');
     emit('close');
   } catch (e) {
     console.error('Failed to save match enrichment:', e);
-    alert('Error al guardar los detalles del partido. Intenta de nuevo.');
+    snackbar.error('Error al guardar los detalles del partido. Intenta de nuevo.');
   } finally {
     saving.value = false;
   }
