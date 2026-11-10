@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isSubscriber(userId) {
+      return isOwner(userId) && (
+        request.auth.token.isSubscriber == true ||
+        get(/databases/$(database)/documents/users/$(userId)).data.subscription.status == 'active' ||
+        get(/databases/$(database)/documents/users/$(userId)).data.subscription.isSubscribed == true
+      );
+    }
+
+    // User profile and subscription entitlement
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
+    // Matches collection: only owner with active subscription can read or write
+    match /matches/{matchId} {
+      allow read: if isAuthenticated() && isSubscriber(resource.data.userId);
+      allow create: if isAuthenticated() && isSubscriber(request.resource.data.userId);
+      allow update, delete: if isAuthenticated() && isSubscriber(resource.data.userId);
+    }
+
+    // Kit bag & equipment
+    match /equipment/{userId}/{document=**} {
+      allow read, write: if isSubscriber(userId);
+    }
+
+    // Tournaments
+    match /tournaments/{tournamentId} {
+      allow read, write: if isAuthenticated() && 
+        isSubscriber(resource.data.userId != null ? resource.data.userId : request.resource.data.userId);
+
+      match /matches/{tournamentMatchId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+  }
+}

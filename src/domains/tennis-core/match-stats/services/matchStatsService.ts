@@ -1,9 +1,46 @@
 import type { MatchPayload } from '../../_shared/types';
 import type { OverviewStats, MatchRow, PhysiologicalData, PointBreakdownData } from '../types';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { db, auth, getCurrentUser } from '@/shared/services/firebase';
 
 export class MatchStatsService {
+    /**
+     * Subscribes to matches using Firestore onSnapshot backed by persistentLocalCache.
+     * Yields cached data immediately (0 network latency / 0 duplicate reads)
+     * and streams only delta updates (new or edited matches).
+     */
+    static subscribeToMatches(
+        userId: string,
+        onUpdate: (matches: MatchPayload[]) => void,
+        onError?: (error: unknown) => void
+    ): () => void {
+        if (typeof window !== 'undefined' && (window as any).__test_matches) {
+            onUpdate((window as any).__test_matches);
+            return () => {};
+        }
+
+        const matchesRef = collection(db, 'matches');
+        const q = query(
+            matchesRef,
+            where('userId', '==', userId)
+        );
+
+        return onSnapshot(q, (snapshot) => {
+            const items = snapshot.docs.map(doc => {
+                const data = doc.data() as MatchPayload;
+                return {
+                    ...data,
+                    id: doc.id
+                };
+            });
+            items.sort((a, b) => (b.idt || 0) - (a.idt || 0));
+            onUpdate(items);
+        }, (err) => {
+            console.error('[MatchStatsService] onSnapshot subscription error:', err);
+            onError?.(err);
+        });
+    }
+
     /**
      * Fetches all matches for the current authenticated user from Cloud Firestore.
      */

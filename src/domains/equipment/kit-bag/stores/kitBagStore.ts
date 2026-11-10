@@ -1,12 +1,15 @@
 import { ref } from 'vue';
 import { KitBagService } from '../services/kitBagService';
 import type { Racquet, Shoe, MaintenanceLogEntry } from '../../_shared/types';
+import { onUserSessionChanged } from '@/shared/services/firebase';
 
 const racquets = ref<Racquet[]>([]);
 const shoes = ref<Shoe[]>([]);
 const logs = ref<MaintenanceLogEntry[]>([]);
 const isLoaded = ref(false);
 const loading = ref(false);
+let sessionListenerAttached = false;
+let lastFetchedUid: string | null = null;
 
 const fetchData = async (force = false) => {
   if (isLoaded.value && !force) {
@@ -44,9 +47,28 @@ const fetchData = async (force = false) => {
   }
 };
 
+const initStore = () => {
+  if (!sessionListenerAttached) {
+    sessionListenerAttached = true;
+    onUserSessionChanged((user) => {
+      if (user && user.uid && user.uid !== lastFetchedUid) {
+        lastFetchedUid = user.uid;
+        fetchData(true);
+      } else if (!user && lastFetchedUid) {
+        lastFetchedUid = null;
+        racquets.value = [];
+        shoes.value = [];
+        logs.value = [];
+        isLoaded.value = false;
+      }
+    });
+  }
+  fetchData();
+};
+
 export function useKitBagStore() {
   if (!isLoaded.value) {
-    fetchData();
+    initStore();
   } else {
     fetchData(); // triggers silent revalidation
   }

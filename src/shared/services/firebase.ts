@@ -1,8 +1,12 @@
+import { ref, computed } from 'vue';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import {
   getAuth,
   GoogleAuthProvider,
   signInWithCredential,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   type Auth,
@@ -14,6 +18,8 @@ import {
   persistentLocalCache,
   persistentMultipleTabManager,
   getFirestore,
+  doc,
+  onSnapshot as onFirestoreSnapshot,
   type Firestore
 } from 'firebase/firestore';
 
@@ -75,12 +81,89 @@ try {
 
 export const db: Firestore = firestoreDb;
 
+// Reactive indicator for whether the dashboard is running inside Flutter InAppWebView shell
+export const isWebView = ref<boolean>(
+  typeof window !== 'undefined' &&
+  (!!window.flutter_inappwebview?.callHandler ||
+   (typeof navigator !== 'undefined' && /flutter|wv|tennisappwebview/i.test(navigator.userAgent.toLowerCase())))
+);
+
+export function isRunningInWebView(): boolean {
+  return isWebView.value;
+}
+
+export interface UserSubscription {
+  isSubscribed: boolean;
+  status: string; // 'active' | 'expired' | 'none'
+  plan?: string;
+  expiryDateMs?: number;
+}
+
+export const userSubscription = ref<UserSubscription>({
+  isSubscribed: false,
+  status: 'none'
+});
+
+export const isUserSubscribed = computed(() => userSubscription.value.isSubscribed);
+
+let subscriptionDocUnsub: (() => void) | null = null;
+
+export function checkAndListenSubscription(userId: string | null) {
+  if (subscriptionDocUnsub) {
+    subscriptionDocUnsub();
+    subscriptionDocUnsub = null;
+  }
+
+  if (!userId) {
+    userSubscription.value = { isSubscribed: false, status: 'none' };
+    return;
+  }
+
+  // If running inside Flutter InAppWebView shell, query native in_app_purchase state directly
+  if (typeof window !== 'undefined' && window.flutter_inappwebview?.callHandler) {
+    window.flutter_inappwebview.callHandler('getSubscriptionStatus').then((res: any) => {
+      if (res && (res.isSubscribed === true || res.status === 'active')) {
+        userSubscription.value = {
+          isSubscribed: true,
+          status: 'active',
+          plan: res.productId || 'pro_monthly'
+        };
+      }
+    }).catch(() => {});
+  }
+
+  // Subscribe to Firestore /users/{uid} document for cross-platform active status
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    subscriptionDocUnsub = onFirestoreSnapshot(userDocRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        const sub = data?.subscription;
+        const isActive = sub?.status === 'active' || sub?.isSubscribed === true;
+        userSubscription.value = {
+          isSubscribed: isActive,
+          status: sub?.status || (isActive ? 'active' : 'none'),
+          plan: sub?.plan || sub?.productId,
+          expiryDateMs: sub?.expiryDateMs
+        };
+      } else {
+        userSubscription.value = { isSubscribed: false, status: 'none' };
+      }
+    }, (err) => {
+      console.warn('[Firebase Auth] Subscription listener error:', err);
+    });
+  } catch (e) {
+    console.warn('[Firebase Auth] Could not listen to subscription doc:', e);
+  }
+}
+
 // Reactive/shared native user state for immediate WebView session availability
 let nativeSessionUser: SessionUser | null = null;
 type SessionListener = (user: SessionUser | null) => void;
 const sessionListeners = new Set<SessionListener>();
 
 function notifySessionListeners(user: SessionUser | null) {
+  checkAndListenSubscription(user?.uid || null);
   for (const listener of sessionListeners) {
     try {
       listener(user);
@@ -106,6 +189,7 @@ export function onUserSessionChanged(callback: SessionListener): () => void {
   sessionListeners.add(callback);
   const current = getActiveSessionUser();
   if (current) {
+    checkAndListenSubscription(current.uid);
     callback(current);
   }
   const unsubFirebase = onAuthStateChanged(auth, (fbUser) => {
@@ -116,8 +200,10 @@ export function onUserSessionChanged(callback: SessionListener): () => void {
         email: fbUser.email || nativeSessionUser?.email || null,
         photoURL: fbUser.photoURL || nativeSessionUser?.photoURL || null
       };
+      checkAndListenSubscription(merged.uid);
       callback(merged);
     } else {
+      checkAndListenSubscription(nativeSessionUser?.uid || null);
       callback(nativeSessionUser);
     }
   });
@@ -185,6 +271,35 @@ export async function signOutUser(): Promise<void> {
     } catch {
       // ignore
     }
+  }
+}
+
+const googleAuthProvider = new GoogleAuthProvider();
+googleAuthProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+/**
+ * Initiates Google Sign-In using Firebase Auth popup (ideal for Desktop and standard browsers).
+ * Gracefully falls back to redirect if popup is blocked by the browser.
+ */
+export async function signInWithGoogle(): Promise<UserCredential | null> {
+  try {
+    const userCredential = await signInWithPopup(auth, googleAuthProvider);
+    return userCredential;
+  } catch (error: unknown) {
+    const authError = error as { code?: string; message?: string };
+    if (authError?.code === 'auth/popup-closed-by-user' || authError?.code === 'auth/cancelled-popup-request') {
+      console.log('[Firebase Auth] Sign-in popup closed by user.');
+      return null;
+    }
+    if (authError?.code === 'auth/popup-blocked') {
+      console.warn('[Firebase Auth] Popup blocked by browser, attempting redirect fallback...');
+      await signInWithRedirect(auth, googleAuthProvider);
+      return null;
+    }
+    console.error('[Firebase Auth] Error during signInWithGoogle:', error);
+    throw error;
   }
 }
 
@@ -277,11 +392,22 @@ export async function authenticateWithNativeSession(session: unknown): Promise<U
 
 /**
  * Listens for Flutter InAppWebView and triggers getNativeAuthSession handler to authenticate.
+ * Also monitors and handles redirect result on standard browser startup.
  */
 export function initWebViewAuth(): void {
+  // Check for any pending redirect result if on standard web browser
+  if (!isWebView.value) {
+    getRedirectResult(auth).catch((err) => {
+      if (err?.code !== 'auth/null-user') {
+        console.warn('[Firebase Auth] getRedirectResult check:', err);
+      }
+    });
+  }
+
   let isProcessed = false;
 
   const handleNativeAuth = async () => {
+    isWebView.value = true;
     if (isProcessed) return;
 
     if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
@@ -301,10 +427,12 @@ export function initWebViewAuth(): void {
   window.onNativeAuthSession = authenticateWithNativeSession;
 
   if (window.flutter_inappwebview?.callHandler) {
+    isWebView.value = true;
     handleNativeAuth();
   }
 
   window.addEventListener('flutterInAppWebViewPlatformReady', () => {
+    isWebView.value = true;
     handleNativeAuth();
   });
 
@@ -317,6 +445,7 @@ export function initWebViewAuth(): void {
     }
     attempts++;
     if (window.flutter_inappwebview?.callHandler) {
+      isWebView.value = true;
       clearInterval(pollTimer);
       handleNativeAuth();
     }

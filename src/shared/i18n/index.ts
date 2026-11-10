@@ -31,6 +31,20 @@ export const messages: Record<Locale, Record<string, string>> = {
     'header.settings': 'CONFIGURACIÓN',
     'app.title': 'Tennis Stats',
 
+    // Auth
+    'auth.login': 'Iniciar Sesión',
+    'auth.loginWithGoogle': 'Iniciar sesión con Google',
+    'auth.logout': 'Cerrar Sesión',
+    'auth.loggingIn': 'Iniciando sesión...',
+    'auth.loginSuccess': 'Sesión iniciada con éxito',
+    'auth.loginError': 'Error al iniciar sesión con Google',
+    'auth.loggedOut': 'Sesión cerrada',
+    'auth.guest': 'Invitado',
+    'auth.notLoggedIn': 'Sin sesión activa',
+    'auth.mobileSessionNotice': 'Sesión administrada por la app móvil',
+    'auth.mobileSessionPrompt': 'Inicia sesión desde tu app móvil para sincronizar tus estadísticas',
+    'auth.loginPrompt': 'Inicia sesión con Google para sincronizar tus partidos y estadísticas',
+
     // Settings
     'settings.title': 'Configuración',
     'settings.subtitle': 'Personaliza tu experiencia de análisis, tema y sincronización con sensores.',
@@ -47,6 +61,10 @@ export const messages: Record<Locale, Record<string, string>> = {
     'settings.statusConnected': 'Conectado',
     'settings.versionTitle': 'Versión del Dashboard',
     'settings.versionBadge': 'v1.4.0 (Material Design 3)',
+    'settings.account': 'Cuenta & Sesión',
+    'settings.accountDesc': 'Gestiona tu sesión de usuario para sincronizar partidos, torneos y equipamiento en la nube.',
+    'settings.accountConnected': 'Sesión Activa',
+    'settings.accountGuest': 'Invitado',
     'settings.openNativeSettings': 'Abrir Ajustes Nativos',
     'settings.langChangedEs': 'Idioma cambiado a Español',
     'settings.langChangedEn': 'Language changed to English',
@@ -225,6 +243,20 @@ export const messages: Record<Locale, Record<string, string>> = {
     'header.settings': 'SETTINGS',
     'app.title': 'Tennis Stats',
 
+    // Auth
+    'auth.login': 'Sign In',
+    'auth.loginWithGoogle': 'Sign in with Google',
+    'auth.logout': 'Sign Out',
+    'auth.loggingIn': 'Signing in...',
+    'auth.loginSuccess': 'Signed in successfully',
+    'auth.loginError': 'Failed to sign in with Google',
+    'auth.loggedOut': 'Signed out',
+    'auth.guest': 'Guest',
+    'auth.notLoggedIn': 'Not signed in',
+    'auth.mobileSessionNotice': 'Session managed by mobile app',
+    'auth.mobileSessionPrompt': 'Sign in from your mobile app to sync your statistics',
+    'auth.loginPrompt': 'Sign in with Google to sync your matches and statistics',
+
     // Settings
     'settings.title': 'Settings',
     'settings.subtitle': 'Customize your analytics experience, theme, and sensor synchronization.',
@@ -241,6 +273,10 @@ export const messages: Record<Locale, Record<string, string>> = {
     'settings.statusConnected': 'Connected',
     'settings.versionTitle': 'Dashboard Version',
     'settings.versionBadge': 'v1.4.0 (Material Design 3)',
+    'settings.account': 'Account & Session',
+    'settings.accountDesc': 'Manage your user session to sync matches, tournaments, and equipment in the cloud.',
+    'settings.accountConnected': 'Active Session',
+    'settings.accountGuest': 'Guest',
     'settings.openNativeSettings': 'Open Native Settings',
     'settings.langChangedEs': 'Language changed to Spanish',
     'settings.langChangedEn': 'Language changed to English',

@@ -32,6 +32,11 @@ const router = createRouter({
             path: '/settings',
             name: 'settings',
             component: () => import('../pages/SettingsView.vue')
+        },
+        {
+            path: '/pro',
+            name: 'pro',
+            component: () => import('../pages/MarketingPaywall.vue')
         }
     ]
 });

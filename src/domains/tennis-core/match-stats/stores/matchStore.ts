@@ -8,6 +8,7 @@ const isLoaded = ref(false);
 const loading = ref(false);
 let lastFetchedUserId: string | null = null;
 let sessionListenerAttached = false;
+let unsubscribeMatches: (() => void) | null = null;
 
 /**
  * Automatically syncs matches containing health_metrics to Android Health Connect
@@ -57,36 +58,38 @@ export const syncMatchesToHealthConnect = async (matchesToSync: MatchPayload[]) 
   }
 };
 
-const fetchMatches = async (explicitUserId?: string, force = false) => {
-  const targetUid = explicitUserId || getActiveSessionUser()?.uid || null;
-
-  // If already loaded and not forced/user changed, do silent background revalidation
-  if (isLoaded.value && !force && targetUid === lastFetchedUserId) {
-    try {
-      const freshMatches = await MatchStatsService.getMatches(targetUid || undefined);
-      matches.value = freshMatches;
-      syncMatchesToHealthConnect(freshMatches);
-    } catch (e) {
-      console.warn('[matchStore] Silent background revalidation failed:', e);
-    }
-    return;
+const startMatchesSubscription = (targetUid: string) => {
+  if (unsubscribeMatches) {
+    unsubscribeMatches();
+    unsubscribeMatches = null;
   }
 
-  // Initial loading only when we have no data in memory
-  if (!isLoaded.value || targetUid !== lastFetchedUserId) {
+  if (!isLoaded.value) {
     loading.value = true;
   }
 
-  try {
+  unsubscribeMatches = MatchStatsService.subscribeToMatches(
+    targetUid,
+    (items) => {
+      matches.value = items;
+      isLoaded.value = true;
+      loading.value = false;
+      syncMatchesToHealthConnect(items);
+    },
+    (err) => {
+      console.warn('[matchStore] Real-time subscription error:', err);
+      loading.value = false;
+    }
+  );
+};
+
+const fetchMatches = async (explicitUserId?: string, force = false) => {
+  const targetUid = explicitUserId || getActiveSessionUser()?.uid || null;
+  if (!targetUid) return;
+
+  if (targetUid !== lastFetchedUserId || force) {
     lastFetchedUserId = targetUid;
-    const items = await MatchStatsService.getMatches(targetUid || undefined);
-    matches.value = items;
-    isLoaded.value = true;
-    syncMatchesToHealthConnect(items);
-  } catch (e) {
-    console.error('[matchStore] Error fetching matches:', e);
-  } finally {
-    loading.value = false;
+    startMatchesSubscription(targetUid);
   }
 };
 
@@ -95,11 +98,24 @@ const initStore = () => {
     sessionListenerAttached = true;
     onUserSessionChanged((user) => {
       if (user && user.uid && user.uid !== lastFetchedUserId) {
-        fetchMatches(user.uid, true);
+        lastFetchedUserId = user.uid;
+        startMatchesSubscription(user.uid);
+      } else if (!user && lastFetchedUserId) {
+        if (unsubscribeMatches) {
+          unsubscribeMatches();
+          unsubscribeMatches = null;
+        }
+        lastFetchedUserId = null;
+        matches.value = [];
+        isLoaded.value = false;
       }
     });
   }
-  fetchMatches();
+  const currentUid = getActiveSessionUser()?.uid;
+  if (currentUid && currentUid !== lastFetchedUserId) {
+    lastFetchedUserId = currentUid;
+    startMatchesSubscription(currentUid);
+  }
 };
 
 const updateEnrichedMatch = (matchId: string, data: Partial<MatchPayload>) => {

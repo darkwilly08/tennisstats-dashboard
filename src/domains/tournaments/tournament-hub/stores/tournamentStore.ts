@@ -89,6 +89,13 @@ const initStore = () => {
     onUserSessionChanged((user) => {
       if (user && user.uid && user.uid !== lastFetchedUid) {
         fetchTournaments(user.uid, true);
+      } else if (!user && lastFetchedUid) {
+        lastFetchedUid = null;
+        tournaments.value = [];
+        activeTournament.value = null;
+        bracketMatches.value = [];
+        tournamentMatches.value = [];
+        isLoaded.value = false;
       }
     });
   }
