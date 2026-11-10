@@ -9,6 +9,54 @@ const loading = ref(false);
 let lastFetchedUserId: string | null = null;
 let sessionListenerAttached = false;
 
+/**
+ * Automatically syncs matches containing health_metrics to Android Health Connect
+ * via the native Flutter InAppWebView JavaScript bridge (`recordTennisExercise`).
+ */
+export const syncMatchesToHealthConnect = async (matchesToSync: MatchPayload[]) => {
+  if (typeof window === 'undefined' || !(window as any).flutter_inappwebview?.callHandler) {
+    return;
+  }
+
+  const currentUserId = lastFetchedUserId || getActiveSessionUser()?.uid || 'default';
+  const syncedStorageKey = `synced_hc_matches_${currentUserId}`;
+  let syncedIds = new Set<string>();
+  try {
+    const cached = localStorage.getItem(syncedStorageKey);
+    if (cached) {
+      syncedIds = new Set<string>(JSON.parse(cached));
+    }
+  } catch (e) {
+    console.warn('[matchStore] Could not read synced_hc_matches from localStorage', e);
+  }
+
+  let newSyncOccurred = false;
+  for (const match of matchesToSync) {
+    const matchId = match.id || (match as any).matchId;
+    if (!matchId) continue;
+
+    if (!syncedIds.has(matchId) && (match.health_metrics || (match as any).healthMetrics)) {
+      try {
+        console.log(`[matchStore] Syncing match ${matchId} to Health Connect...`);
+        const response = await (window as any).flutter_inappwebview.callHandler('recordTennisExercise', match);
+        console.log(`[matchStore] Health Connect sync result for ${matchId}:`, response);
+        syncedIds.add(matchId);
+        newSyncOccurred = true;
+      } catch (err) {
+        console.warn(`[matchStore] Failed syncing match ${matchId} to Health Connect:`, err);
+      }
+    }
+  }
+
+  if (newSyncOccurred) {
+    try {
+      localStorage.setItem(syncedStorageKey, JSON.stringify(Array.from(syncedIds)));
+    } catch (e) {
+      // Ignore storage quota
+    }
+  }
+};
+
 const fetchMatches = async (explicitUserId?: string, force = false) => {
   const targetUid = explicitUserId || getActiveSessionUser()?.uid || null;
 
@@ -17,6 +65,7 @@ const fetchMatches = async (explicitUserId?: string, force = false) => {
     try {
       const freshMatches = await MatchStatsService.getMatches(targetUid || undefined);
       matches.value = freshMatches;
+      syncMatchesToHealthConnect(freshMatches);
     } catch (e) {
       console.warn('[matchStore] Silent background revalidation failed:', e);
     }
@@ -33,6 +82,7 @@ const fetchMatches = async (explicitUserId?: string, force = false) => {
     const items = await MatchStatsService.getMatches(targetUid || undefined);
     matches.value = items;
     isLoaded.value = true;
+    syncMatchesToHealthConnect(items);
   } catch (e) {
     console.error('[matchStore] Error fetching matches:', e);
   } finally {
@@ -57,12 +107,19 @@ const updateEnrichedMatch = (matchId: string, data: Partial<MatchPayload>) => {
   if (idx !== -1) {
     const current = matches.value[idx];
     if (current) {
-      matches.value[idx] = {
+      const updated = {
         ...current,
         ...data,
         enriched: true
       } as MatchPayload;
+      matches.value[idx] = updated;
       matches.value = [...matches.value];
+
+      if (typeof window !== 'undefined' && (window as any).flutter_inappwebview?.callHandler) {
+        (window as any).flutter_inappwebview.callHandler('recordTennisExercise', updated).catch((err: any) => {
+          console.warn('[matchStore] Re-syncing enriched match failed:', err);
+        });
+      }
     }
   }
 };

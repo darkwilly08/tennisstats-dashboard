@@ -87,6 +87,23 @@
             <div class="text-[10px] text-on-surface-variant font-medium uppercase">{{ t('matchDetail.breaksWon', 'Quiebres Ganados') }}</div>
           </div>
         </div>
+
+        <!-- Health Connect / Google Health Sync action -->
+        <div v-if="match.health_metrics" class="flex items-center justify-between p-2.5 rounded-xl bg-surface-variant border border-outline">
+          <div class="flex items-center gap-2">
+            <span class="material-icons-round text-primary text-base">favorite</span>
+            <span class="text-xs font-medium text-on-surface">Google Health / Health Connect</span>
+          </div>
+          <button
+            type="button"
+            @click="handleManualHealthConnectSync"
+            :disabled="syncingHealth"
+            class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-primary text-on-primary hover:opacity-90 transition-all flex items-center gap-1 disabled:opacity-50"
+          >
+            <span class="material-icons-round text-sm" :class="{ 'animate-spin': syncingHealth }">sync</span>
+            <span>{{ syncingHealth ? t('matchDetail.syncingHealth', 'Sincronizando...') : t('matchDetail.syncHealth', 'Sincronizar salud') }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Editable Match Properties Form -->
@@ -222,19 +239,19 @@
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-outline-variant">
+        <!-- Action Buttons (Full width stacked on mobile) -->
+        <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-3 border-t border-outline-variant w-full">
           <button
             type="button"
             @click="emit('close')"
-            class="btn-secondary text-sm"
+            class="btn-secondary text-sm w-full sm:w-auto"
           >
             {{ t('matchDetail.close', 'Cerrar') }}
           </button>
           <button
             type="submit"
             :disabled="saving || !form.rival.trim()"
-            class="btn-primary text-sm disabled:opacity-50"
+            class="btn-primary text-sm disabled:opacity-50 w-full sm:w-auto"
           >
             <span v-if="saving" class="material-icons-round animate-spin text-sm mr-1">refresh</span>
             <span>{{ t('matchDetail.save', 'Guardar Cambios') }}</span>
@@ -351,6 +368,29 @@ const formattedScore = computed(() => {
   }
   return props.match?.win ? '6-4 6-3' : '4-6 3-6';
 });
+
+const syncingHealth = ref(false);
+const handleManualHealthConnectSync = async () => {
+  if (!props.match) return;
+  syncingHealth.value = true;
+  try {
+    if (window.flutter_inappwebview?.callHandler) {
+      const res = await window.flutter_inappwebview.callHandler('recordTennisExercise', props.match);
+      if (res && (res as any).success !== false) {
+        snackbar.success(t('matchDetail.healthSyncSuccess', 'Partido sincronizado con Health Connect / Google Health'));
+      } else {
+        snackbar.error(t('matchDetail.healthSyncError', 'Error al sincronizar con Health Connect'));
+      }
+    } else {
+      snackbar.info(t('matchDetail.noNativeBridge', 'Sincronización disponible en la app Android / Wear OS'));
+    }
+  } catch (e) {
+    console.warn('Manual Health Connect sync failed:', e);
+    snackbar.error(t('matchDetail.healthSyncError', 'Error al sincronizar con Health Connect'));
+  } finally {
+    syncingHealth.value = false;
+  }
+};
 
 const requestLocation = async () => {
   locating.value = true;
