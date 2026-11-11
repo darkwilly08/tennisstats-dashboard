@@ -93,10 +93,10 @@
       </div>
     </header>
 
-    <!-- Main View Slot with Smooth Transition -->
-    <div class="flex-1">
+    <!-- Main View Slot with Smooth Transition & Pull-To-Refresh -->
+    <PullToRefresh :onRefresh="handleGlobalRefresh" class="flex-1 flex flex-col">
       <slot />
-    </div>
+    </PullToRefresh>
 
     <!-- Global M3 Snackbar / Toast Notifications -->
     <SnackbarContainer />
@@ -104,7 +104,7 @@
     <!-- Slide-Out Drawer Backdrop -->
     <div 
       v-if="isDrawerOpen" 
-      class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 transition-opacity"
+      class="fixed inset-0 bg-slate-950/60 z-50 transition-opacity"
       @click="isDrawerOpen = false" 
     />
 
@@ -297,11 +297,14 @@ import { useAuth } from '@/shared/composables/useAuth';
 import { useI18n } from '@/shared/i18n';
 import { useSnackbar } from '@/shared/composables/useSnackbar';
 import SnackbarContainer from '@/shared/components/SnackbarContainer.vue';
+import PullToRefresh from '@/shared/components/PullToRefresh.vue';
+import { usePullToRefresh } from '@/shared/composables/usePullToRefresh';
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const snackbar = useSnackbar();
+const { activeHandler } = usePullToRefresh();
 const { 
   user, 
   isAuthenticated, 
@@ -342,6 +345,35 @@ const isRouteActive = (paths: string[]) => {
 
 const handleNavigateToSettings = () => {
   router.push('/settings');
+};
+
+const handleGlobalRefresh = async () => {
+  try {
+    if (activeHandler.value) {
+      await activeHandler.value();
+      return;
+    }
+
+    const path = route.path;
+    if (path === '/' || path.startsWith('/analytics')) {
+      const { useMatchStats } = await import('@/domains/tennis-core/match-stats');
+      await useMatchStats().refresh(undefined, true);
+    } else if (path.startsWith('/tournament')) {
+      const { useTournament } = await import('@/domains/tournaments/tournament-hub');
+      await useTournament().refresh();
+    } else if (path.startsWith('/kit-bag')) {
+      const { useKitBag } = await import('@/domains/equipment/kit-bag');
+      await useKitBag().refresh();
+    }
+
+    if (typeof window !== 'undefined' && (window as any).flutter_inappwebview?.callHandler) {
+      try {
+        await (window as any).flutter_inappwebview.callHandler('onPullToRefresh');
+      } catch {}
+    }
+  } catch (err) {
+    console.warn('[AppLayout] Pull-to-refresh failed:', err);
+  }
 };
 
 const handleSignIn = async () => {

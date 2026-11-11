@@ -1,10 +1,13 @@
 <template>
   <teleport to="body">
-    <transition name="bottom-sheet">
-      <div v-if="isOpen" class="bottom-sheet-wrapper fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <!-- Backdrop -->
+    <transition name="bottom-sheet" :duration="{ enter: 280, leave: 220 }">
+      <div 
+        v-if="isOpen" 
+        class="bottom-sheet-wrapper fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      >
+        <!-- Backdrop (Clean high-performance dark overlay without heavy GPU blur) -->
         <div 
-          class="bottom-sheet-backdrop fixed inset-0 bg-slate-950/70 backdrop-blur-sm" 
+          class="bottom-sheet-backdrop fixed inset-0 bg-slate-950/60" 
           @click="emit('close')" 
         />
 
@@ -74,15 +77,18 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
-// Prevent background body scrolling when bottom sheet is active
+// Prevent background body scrolling when bottom sheet is active, avoiding layout shift
 watch(() => props.isOpen, (open) => {
   if (typeof document !== 'undefined') {
     if (open) {
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+      if (scrollBarWidth > 0) {
+        document.body.style.paddingRight = `${scrollBarWidth}px`;
+      }
       document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
     } else {
       document.body.style.overflow = '';
-      document.body.style.touchAction = '';
+      document.body.style.paddingRight = '';
     }
   }
 }, { immediate: true });
@@ -90,51 +96,53 @@ watch(() => props.isOpen, (open) => {
 onUnmounted(() => {
   if (typeof document !== 'undefined') {
     document.body.style.overflow = '';
-    document.body.style.touchAction = '';
+    document.body.style.paddingRight = '';
   }
 });
 </script>
 
 <style scoped>
-/* Backdrop smooth fade */
-.bottom-sheet-enter-active .bottom-sheet-backdrop {
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+/* Wrapper / Backdrop fade */
+.bottom-sheet-enter-active,
+.bottom-sheet-leave-active {
+  transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.bottom-sheet-enter-from .bottom-sheet-backdrop {
-  opacity: 0;
-}
-.bottom-sheet-leave-active .bottom-sheet-backdrop {
-  transition: opacity 0.22s cubic-bezier(0.7, 0, 0.84, 0);
-}
-.bottom-sheet-leave-to .bottom-sheet-backdrop {
+.bottom-sheet-enter-from,
+.bottom-sheet-leave-to {
   opacity: 0;
 }
 
-/* Panel slide-up & slide-down with easing */
+/* Panel hardware-accelerated slide */
+.bottom-sheet-panel {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Mobile: Pure bottom slide */
 .bottom-sheet-enter-active .bottom-sheet-panel {
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.32s ease-out;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.bottom-sheet-enter-from .bottom-sheet-panel {
-  transform: translateY(100%);
-  opacity: 0.9;
+.bottom-sheet-leave-active .bottom-sheet-panel {
+  transition: transform 0.22s cubic-bezier(0.4, 0, 1, 1);
 }
-@media (min-width: 640px) {
-  .bottom-sheet-enter-from .bottom-sheet-panel {
-    transform: translateY(16px) scale(0.96);
-    opacity: 0;
-  }
+.bottom-sheet-enter-from .bottom-sheet-panel,
+.bottom-sheet-leave-to .bottom-sheet-panel {
+  transform: translate3d(0, 100%, 0);
 }
 
-.bottom-sheet-leave-active .bottom-sheet-panel {
-  transition: transform 0.22s cubic-bezier(0.7, 0, 0.84, 0), opacity 0.22s ease-in;
-}
-.bottom-sheet-leave-to .bottom-sheet-panel {
-  transform: translateY(100%);
-  opacity: 0.9;
-}
+/* Desktop: subtle scale + translate */
 @media (min-width: 640px) {
+  .bottom-sheet-enter-active .bottom-sheet-panel {
+    transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.26s ease-out;
+  }
+  .bottom-sheet-leave-active .bottom-sheet-panel {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s ease-in;
+  }
+  .bottom-sheet-enter-from .bottom-sheet-panel,
   .bottom-sheet-leave-to .bottom-sheet-panel {
-    transform: translateY(16px) scale(0.96);
+    transform: translate3d(0, 14px, 0) scale(0.97);
     opacity: 0;
   }
 }

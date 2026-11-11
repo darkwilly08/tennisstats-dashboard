@@ -43,9 +43,11 @@
     --md-sys-color-outline-variant: #1E293B;
   }
 
+  html,
   body {
     background-color: var(--md-sys-color-background);
     color: var(--md-sys-color-on-surface);
+    overscroll-behavior-y: contain;
   }
 
   /* Override @tailwindcss/forms hardcoded #fff on input elements */

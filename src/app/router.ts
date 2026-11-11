@@ -2,6 +2,24 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
     history: createWebHistory(),
+    scrollBehavior(to, _from, savedPosition) {
+        if (savedPosition) {
+            return savedPosition;
+        }
+        if (to.hash) {
+            return { el: to.hash, behavior: 'smooth' };
+        }
+        // When transitioning between screens with <transition mode="out-in"> (150ms),
+        // ensure the scroll resets to top: 0 exactly as the new view mounts.
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+                resolve({ top: 0, left: 0 });
+            }, 160);
+        });
+    },
     routes: [
         {
             path: '/',
@@ -39,6 +57,16 @@ const router = createRouter({
             component: () => import('../pages/MarketingPaywall.vue')
         }
     ]
+});
+
+router.afterEach((to, from) => {
+    if (to.path !== from.path) {
+        setTimeout(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        }, 160);
+    }
 });
 
 export default router;

@@ -1,6 +1,6 @@
 <template>
   <BottomSheet
-    :isOpen="true"
+    :isOpen="isOpen"
     :title="t('matchDetail.enrichTitle', 'Completar Detalles del Partido')"
     :subtitle="t('matchDetail.enrichSubtitle', 'Registrado desde tu reloj Wear OS')"
     icon="edit_note"
@@ -219,10 +219,13 @@ import BottomSheet from '@/shared/components/BottomSheet.vue';
 import { useSnackbar } from '@/shared/composables/useSnackbar';
 import { useI18n } from '@/shared/i18n';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   match: MatchPayload;
   previousRivals: string[];
-}>();
+  isOpen?: boolean;
+}>(), {
+  isOpen: true
+});
 
 const emit = defineEmits<{
   (e: 'close'): void;

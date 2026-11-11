@@ -265,7 +265,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import type { MatchPayload } from '../../_shared/types';
-import { MatchStatsService } from '../services/matchStatsService';
+import { MatchStatsService, formatMatchDate } from '../services/matchStatsService';
 import { TournamentService, type Tournament } from '@/domains/tournaments/tournament-hub';
 import BottomSheet from '@/shared/components/BottomSheet.vue';
 import { useSnackbar } from '@/shared/composables/useSnackbar';
@@ -345,7 +345,7 @@ const rivalSuggestions = computed(() => {
 
 const formattedDate = computed(() => {
   if (!props.match?.idt) return '';
-  return new Date(props.match.idt).toLocaleDateString();
+  return formatMatchDate(props.match.idt);
 });
 
 const formattedDuration = computed(() => {

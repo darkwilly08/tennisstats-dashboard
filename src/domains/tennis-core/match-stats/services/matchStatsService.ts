@@ -3,6 +3,25 @@ import type { OverviewStats, MatchRow, PhysiologicalData, PointBreakdownData } f
 import { collection, query, where, getDocs, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { db, auth, getCurrentUser } from '@/shared/services/firebase';
 
+/**
+ * Formats a timestamp into dd/MMM/yy HH:mm (e.g. 11/Nov/24 07:13)
+ */
+export function formatMatchDate(timestamp: number | string | Date): string {
+    const d = new Date(timestamp);
+    if (isNaN(d.getTime())) return '';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const locale = typeof navigator !== 'undefined' ? (navigator.language || 'es') : 'es';
+    let rawMonth = d.toLocaleDateString(locale, { month: 'short' }).replace('.', '').trim();
+    if (rawMonth.length > 3) {
+        rawMonth = rawMonth.slice(0, 3);
+    }
+    const mmm = rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1).toLowerCase();
+    const yy = String(d.getFullYear()).slice(-2);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mmm}/${yy} ${hh}:${mm}`;
+}
+
 export class MatchStatsService {
     /**
      * Subscribes to matches using Firestore onSnapshot backed by persistentLocalCache.
@@ -205,8 +224,7 @@ export class MatchStatsService {
             const textH = hours > 0 ? `${hours}h ` : '';
             const mins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
 
-            const d = new Date(match.idt);
-            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            const dateStr = formatMatchDate(match.idt);
 
             return {
                 id: match.id || `match_${match.idt}`,

@@ -165,7 +165,8 @@
 
     <!-- Post-Match Enrichment Modal (Bottom Sheet) -->
     <MatchEnrichmentModal 
-      v-if="showEnrichmentModal && pendingEnrichmentMatch"
+      v-if="pendingEnrichmentMatch"
+      :isOpen="showEnrichmentModal"
       :match="pendingEnrichmentMatch"
       :previousRivals="previousRivals"
       @close="showEnrichmentModal = false"
@@ -186,7 +187,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useMatchStats } from './composables/useMatchStats';
-import { MatchStatsService } from './services/matchStatsService';
+import { MatchStatsService, formatMatchDate } from './services/matchStatsService';
 import OverviewCards from './components/OverviewCards.vue';
 import HealthDataCards from './components/HealthDataCards.vue';
 import MatchResultsTable from './components/MatchResultsTable.vue';
@@ -445,7 +446,7 @@ const handleMatchEnriched = (updatedData: Partial<MatchPayload>) => {
 
 const formatPendingMatchDate = (idt?: number) => {
   if (!idt) return '';
-  return new Date(idt).toLocaleDateString();
+  return formatMatchDate(idt);
 };
 
 const formatPendingMatchScore = (match: MatchPayload) => {
