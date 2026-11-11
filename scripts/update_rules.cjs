@@ -1,4 +1,4 @@
-const { GoogleAuth } = require('C:/Users/darkw/Documents/codes/hobbies/tennis-stats/tennisstats-dashboard-firebase/node_modules/google-auth-library');
+const { GoogleAuth } = require('google-auth-library');
 
 const keyPath = 'C:/Users/darkw/Documents/codes/hobbies/tennis-stats/Tennis%20stats%20dashboard/expressBackend/firebase-serviceAccount.json';
 
@@ -13,6 +13,10 @@ async function updateRules() {
   const rulesContent = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /sync_logs/{logId} {
+      allow create: if true;
+      allow read: if request.auth != null;
+    }
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
