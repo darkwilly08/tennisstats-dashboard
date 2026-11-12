@@ -15,10 +15,25 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /sync_logs/{logId} {
       allow create: if true;
-      allow read: if request.auth != null;
+      allow read: if true;
+    }
+    match /matches/{matchId} {
+      allow read, write: if true;
+    }
+    match /tournaments/{tournamentId} {
+      allow read, write: if true;
+      match /matches/{tournamentMatchId} {
+        allow read, write: if true;
+      }
+    }
+    match /equipment/{userId}/{document=**} {
+      allow read, write: if true;
+    }
+    match /users/{userId} {
+      allow read, write: if true;
     }
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }`;

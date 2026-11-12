@@ -68,15 +68,35 @@ const startMatchesSubscription = (targetUid: string) => {
     loading.value = true;
   }
 
+  // Safety fallback: if real-time listener is slow or blocked, fetch directly after 3.5s to unblock UI
+  const fallbackTimer = setTimeout(async () => {
+    if (loading.value) {
+      console.warn('[matchStore] Subscription taking long, executing fallback getMatches fetch...');
+      try {
+        const direct = await MatchStatsService.getMatches(targetUid);
+        if (direct.length > 0 || !isLoaded.value) {
+          matches.value = direct;
+          isLoaded.value = true;
+        }
+      } catch (e) {
+        console.warn('[matchStore] Fallback getMatches error:', e);
+      } finally {
+        loading.value = false;
+      }
+    }
+  }, 3500);
+
   unsubscribeMatches = MatchStatsService.subscribeToMatches(
     targetUid,
     (items) => {
+      clearTimeout(fallbackTimer);
       matches.value = items;
       isLoaded.value = true;
       loading.value = false;
       syncMatchesToHealthConnect(items);
     },
     (err) => {
+      clearTimeout(fallbackTimer);
       console.warn('[matchStore] Real-time subscription error:', err);
       loading.value = false;
     }

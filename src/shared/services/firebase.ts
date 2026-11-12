@@ -16,6 +16,7 @@ import {
 import {
   initializeFirestore,
   persistentLocalCache,
+  persistentSingleTabManager,
   persistentMultipleTabManager,
   getFirestore,
   doc,
@@ -67,20 +68,6 @@ const firebaseConfig = {
 export const app: FirebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(app);
 
-// Initialize Firestore with offline persistence
-let firestoreDb: Firestore;
-try {
-  firestoreDb = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager()
-    })
-  });
-} catch {
-  firestoreDb = getFirestore(app);
-}
-
-export const db: Firestore = firestoreDb;
-
 // Reactive indicator for whether the dashboard is running inside Flutter InAppWebView shell
 export const isWebView = ref<boolean>(
   typeof window !== 'undefined' &&
@@ -91,6 +78,25 @@ export const isWebView = ref<boolean>(
 export function isRunningInWebView(): boolean {
   return isWebView.value;
 }
+
+// Initialize Firestore with offline persistence
+let firestoreDb: Firestore;
+try {
+  const isMultiTabDesktop = typeof window !== 'undefined' &&
+    'locks' in navigator &&
+    !isWebView.value &&
+    !/mobile|android|iphone|ipad/i.test(navigator.userAgent);
+
+  firestoreDb = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: isMultiTabDesktop ? persistentMultipleTabManager() : persistentSingleTabManager({})
+    })
+  });
+} catch {
+  firestoreDb = getFirestore(app);
+}
+
+export const db: Firestore = firestoreDb;
 
 export interface UserSubscription {
   isSubscribed: boolean;
