@@ -42,6 +42,8 @@ export interface NativeAuthSession {
   photoURL?: string | null;
   photoUrl?: string | null;
   idToken?: string | null;
+  googleIdToken?: string | null;
+  firebaseIdToken?: string | null;
   accessToken?: string | null;
   id_token?: string | null;
   access_token?: string | null;
@@ -436,7 +438,7 @@ export async function authenticateWithNativeSession(session: unknown): Promise<U
       accessToken = typeof parsed[1] === 'string' ? parsed[1] : null;
     } else {
       const s = parsed as NativeAuthSession;
-      idToken = s.idToken ?? s.id_token ?? s.token ?? null;
+      idToken = s.googleIdToken ?? s.idToken ?? s.id_token ?? s.token ?? null;
       accessToken = s.accessToken ?? s.access_token ?? null;
       extractedUid = s.uid ?? s.userId ?? null;
       extractedName = s.displayName ?? s.name ?? null;
@@ -467,6 +469,7 @@ export async function authenticateWithNativeSession(session: unknown): Promise<U
   try {
     const credential = GoogleAuthProvider.credential(idToken, accessToken);
     const userCredential = await signInWithCredential(auth, credential);
+    console.info('[Firebase Auth] signInWithCredential successful for uid:', userCredential.user.uid);
     nativeSessionUser = {
       uid: userCredential.user.uid,
       displayName: userCredential.user.displayName || extractedName || 'Franco Berardi',
