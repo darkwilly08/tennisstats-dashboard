@@ -13,27 +13,55 @@ async function updateRules() {
   const rulesContent = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isSubscriber(userId) {
+      return isOwner(userId) && (
+        request.auth.token.isSubscriber == true ||
+        get(/databases/$(database)/documents/users/$(userId)).data.subscription.status == 'active' ||
+        get(/databases/$(database)/documents/users/$(userId)).data.subscription.isSubscribed == true
+      );
+    }
+
+    // Diagnostics / sync logs
     match /sync_logs/{logId} {
       allow create: if true;
       allow read: if true;
     }
-    match /matches/{matchId} {
-      allow read, write: if true;
-    }
-    match /tournaments/{tournamentId} {
-      allow read, write: if true;
-      match /matches/{tournamentMatchId} {
-        allow read, write: if true;
-      }
-    }
-    match /equipment/{userId}/{document=**} {
-      allow read, write: if true;
-    }
+
+    // User profile and subscription entitlement
     match /users/{userId} {
-      allow read, write: if true;
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
     }
-    match /{document=**} {
-      allow read, write: if true;
+
+    // Matches collection: only owner with active subscription can read or write
+    match /matches/{matchId} {
+      allow read: if isAuthenticated() && isSubscriber(resource.data.userId);
+      allow create: if isAuthenticated() && isSubscriber(request.resource.data.userId);
+      allow update, delete: if isAuthenticated() && isSubscriber(resource.data.userId);
+    }
+
+    // Kit bag & equipment
+    match /equipment/{userId}/{document=**} {
+      allow read, write: if isSubscriber(userId);
+    }
+
+    // Tournaments
+    match /tournaments/{tournamentId} {
+      allow read, write: if isAuthenticated() && 
+        isSubscriber(resource.data.userId != null ? resource.data.userId : request.resource.data.userId);
+
+      match /matches/{tournamentMatchId} {
+        allow read, write: if isAuthenticated();
+      }
     }
   }
 }`;

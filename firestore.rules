@@ -18,6 +18,12 @@ service cloud.firestore {
       );
     }
 
+    // Diagnostics / sync logs
+    match /sync_logs/{logId} {
+      allow create: if true;
+      allow read: if true;
+    }
+
     // User profile and subscription entitlement
     match /users/{userId} {
       allow read: if isOwner(userId);
